@@ -1,0 +1,18 @@
+{
+  "name": "polka-bot",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-01",
+  "vars": {
+    "WEB_APP_URL": "https://YOUR_USERNAME.github.io/polka-mvp/",
+    "ALLOWED_ORIGIN": "https://YOUR_USERNAME.github.io",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "polka-reminders",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "triggers": { "crons": ["*/15 * * * *"] },
+}

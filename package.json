@@ -1,0 +1,27 @@
+{
+  "name": "polka-mvp",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @polka/web",
+    "dev:bot": "npm run dev -w @polka/bot",
+    "build": "npm run build -w @polka/web",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run build",
+    "deploy:bot": "npm run deploy -w @polka/bot"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
