@@ -118,20 +118,6 @@ export function PantryScreen({ app }: { app: AppController }) {
                           <ChefHat size={14} />
                           Рецепты
                         </button>
-                        <button
-                          className="pantry-recipes-button"
-                          aria-label={`Записать съеденное: ${foodName(p.foodId)}`}
-                          onClick={() =>
-                            app.openFood(
-                              "Завтрак",
-                              undefined,
-                              "pantry",
-                              p.foodId,
-                            )
-                          }
-                        >
-                          <Plus size={14} />В дневник
-                        </button>
                       </div>
                     </div>
                     <button
