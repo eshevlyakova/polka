@@ -44,6 +44,16 @@ export function parseState(value: unknown): AppState {
         (e.note === undefined || typeof e.note === "string") &&
         (e.eatenAt === undefined || typeof e.eatenAt === "string") &&
         (e.source === undefined || typeof e.source === "string") &&
+        (e.pantryUsed === undefined ||
+          (Array.isArray(e.pantryUsed) &&
+            e.pantryUsed.every(
+              (item) =>
+                typeof item.id === "string" &&
+                typeof item.foodId === "string" &&
+                finite(item.grams) &&
+                item.grams > 0 &&
+                typeof item.expiresOn === "string",
+            ))) &&
         (e.fraction === undefined || finite(e.fraction)),
     ) ||
     !s.batches.every(

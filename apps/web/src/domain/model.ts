@@ -36,6 +36,7 @@ export type Batch = {
   servings: number;
 };
 export type DiaryEntry = {
+  pantryUsed?: PantryItem[];
   eatenAt?: string;
   note?: string;
   source?: string;

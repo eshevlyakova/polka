@@ -33,7 +33,7 @@ it("real input persists pantry and diary across remount", () => {
   expect(screen.getByText("400 г · срок не указан")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Сегодня", exact: true }));
   fireEvent.click(
-    screen.getByRole("button", { name: "Добавить еду", exact: true }),
+    screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
   );
   fireEvent.change(screen.getByLabelText("Количество, г"), {
     target: { value: "100" },
@@ -82,7 +82,7 @@ it("cooking and portion entry are separate user actions", () => {
   });
   fireEvent.click(
     within(screen.getByRole("dialog")).getByRole("button", {
-      name: "Записать порцию",
+      name: "Добавить в дневник",
       exact: true,
     }),
   );
@@ -174,7 +174,7 @@ it("custom picker filters recipes and Escape leaves the food form open", () => {
   expect(screen.queryByRole("listbox")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Сегодня", exact: true }));
   fireEvent.click(
-    screen.getByRole("button", { name: "Добавить еду", exact: true }),
+    screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
   );
   const meal = screen.getByRole("combobox", { name: "Приём пищи" });
   fireEvent.click(meal);
@@ -213,4 +213,72 @@ it("adds multiple dishes to the same meal on a previous week", () => {
   expect(
     screen.queryByRole("button", { name: "Вернуться к сегодня" }),
   ).toBeNull();
+});
+
+it("pantry recipe action filters by product and can return to pantry", () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Рецепты с продуктом: Яйцо" }),
+  );
+  expect(screen.getByRole("button", { name: /Омлет с томатами/ })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /Курица с рисом/ })).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Готовые остатки" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "К полке" }));
+  expect(screen.getByRole("heading", { name: "Моя полка" })).toBeTruthy();
+});
+
+it("prepared dishes live on the pantry instead of recipes", () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "Рецепты", exact: true }));
+  expect(screen.queryByRole("heading", { name: "Готовые остатки" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Записать порцию" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /Готовая еда/ }));
+  expect(screen.getByRole("heading", { name: "Курица с рисом" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Записать порцию" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /Продукты/ }));
+  expect(screen.queryByRole("button", { name: "Записать порцию" })).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Добавить продукт", exact: true }),
+  ).toBeTruthy();
+});
+
+it("the intake form switches between shelf and other food and preserves selected meal date", () => {
+  const state = emptyState();
+  state.settings.onboarded = true;
+  state.pantry = [{ id: "egg-lot", foodId: "egg", grams: 300, expiresOn: "" }];
+  localStorage.setItem("polka:v1:browser", JSON.stringify(state));
+  render(<App />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
+  );
+  expect(screen.getByRole("dialog", { name: "Что ты съел?" })).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Количество, г"), {
+    target: { value: "100" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+  let saved = JSON.parse(localStorage.getItem("polka:v1:browser")!);
+  expect(saved.pantry[0].grams).toBe(200);
+  expect(saved.diary[0].source).toBe("С полки");
+  fireEvent.click(
+    screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
+  );
+  fireEvent.click(
+    within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Другая еда",
+      exact: true,
+    }),
+  );
+  fireEvent.change(screen.getByLabelText("Количество, г"), {
+    target: { value: "150" },
+  });
+  fireEvent.change(screen.getByLabelText("Когда съел"), {
+    target: { value: "2026-10-10" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+  saved = JSON.parse(localStorage.getItem("polka:v1:browser")!);
+  expect(saved.pantry[0].grams).toBe(200);
+  expect(saved.diary[0].date).toBe("2026-10-10");
+  expect(saved.diary[0].source).toBe("Другая еда");
 });

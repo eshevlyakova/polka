@@ -9,7 +9,7 @@ export function OwnRecipeDialog({ app }: { app: AppController }) {
   const {
     state,
     commit,
-    setTab,
+    openPreparedFood,
     modal,
     setModal,
     draft,
@@ -46,7 +46,7 @@ export function OwnRecipeDialog({ app }: { app: AppController }) {
                 ),
               );
               setModal(null);
-              setTab("recipes");
+              openPreparedFood();
             })}
           >
             <label>

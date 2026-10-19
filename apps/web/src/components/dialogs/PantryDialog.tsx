@@ -30,7 +30,10 @@ export function PantryDialog({ app }: { app: AppController }) {
           >
             <label>
               Продукт
-              <Select name="foodId">
+              <Select
+                name="foodId"
+                defaultValue={app.pantryFoodId ?? undefined}
+              >
                 {catalog.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.name}

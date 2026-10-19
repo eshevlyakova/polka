@@ -46,7 +46,7 @@ export function DiaryScreen({ app }: { app: AppController }) {
         </div>
         <button
           className="round"
-          aria-label="Добавить еду"
+          aria-label="Записать приём пищи"
           onClick={() => app.openFood("Завтрак", diaryDate)}
         >
           <Plus />
@@ -118,7 +118,9 @@ export function DiaryScreen({ app }: { app: AppController }) {
               onClick={() => app.openFood(name, diaryDate)}
             >
               <Plus size={17} />
-              {entries.length ? "Добавить ещё блюдо" : "Добавить еду"}
+              {entries.length
+                ? "Добавить ещё продукт или блюдо"
+                : "Добавить продукт или блюдо"}
             </button>
           </section>
         );

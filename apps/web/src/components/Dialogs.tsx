@@ -1,3 +1,4 @@
+import { CatalogDialog } from "./dialogs/CatalogDialog";
 import { WeightDialog } from "./dialogs/WeightDialog";
 import { ProfileDialog } from "./dialogs/ProfileDialog";
 import { QuickEditDialogs } from "./dialogs/QuickEditDialogs";
@@ -10,6 +11,7 @@ import { RecipeDialog } from "./dialogs/RecipeDialog";
 export function Dialogs({ app }: { app: AppController }) {
   return (
     <>
+      <CatalogDialog app={app} />
       <WeightDialog app={app} />
       <ProfileDialog app={app} />
       <QuickEditDialogs app={app} />

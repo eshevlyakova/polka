@@ -1,7 +1,8 @@
+import { PreparedFood } from "../components/PreparedFood";
 import { useState } from "react";
 import { expiryDays } from "../domain/input";
 import { FoodArt } from "../components/FoodArt";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, ChefHat } from "lucide-react";
 import { Empty } from "../components/ui";
 
 import type { AppController } from "../hooks/useAppController";
@@ -12,9 +13,12 @@ export function PantryScreen({ app }: { app: AppController }) {
     tab,
     setModal,
     setEditingPantryId,
-    catalog,
+    openPantry,
+    openFoodRecipes,
     run,
     foodName,
+    pantrySection,
+    setPantrySection,
   } = app;
   const [filter, setFilter] = useState<"all" | "soon">("all");
   const visible = state.pantry.filter(
@@ -26,82 +30,145 @@ export function PantryScreen({ app }: { app: AppController }) {
         <>
           <div className="heading">
             <h1>Моя полка</h1>
-            <button
-              className="round"
-              aria-label="Добавить продукт"
-              onClick={() => setModal("pantry")}
-            >
-              <Plus />
-            </button>
+            {pantrySection === "products" && (
+              <button
+                className="round"
+                aria-label="Добавить продукт"
+                onClick={() => openPantry()}
+              >
+                <Plus />
+              </button>
+            )}
           </div>
           <p className="muted">Всё нужное под рукой.</p>
-          <div className="filter-chips">
+          <nav className="pantry-sections" aria-label="Категории полки">
             <button
-              className={filter === "all" ? "selected" : ""}
-              onClick={() => setFilter("all")}
+              aria-pressed={pantrySection === "products"}
+              onClick={() => setPantrySection("products")}
             >
-              Все продукты <span>{state.pantry.length}</span>
+              Продукты<span>{state.pantry.length}</span>
             </button>
             <button
-              className={filter === "soon" ? "selected" : ""}
-              onClick={() => setFilter("soon")}
+              aria-pressed={pantrySection === "prepared"}
+              onClick={() => setPantrySection("prepared")}
             >
-              Скоро использовать
+              Готовая еда
+              <span>
+                {
+                  state.batches.filter(
+                    (batch) => batch.remainingFraction > 1e-6,
+                  ).length
+                }
+              </span>
             </button>
-          </div>
-          {visible.length ? (
-            visible.map((p) => (
-              <div className="item" key={p.id}>
-                <FoodArt foodId={p.foodId} />
-                <div className="grow">
-                  <b>{foodName(p.foodId)}</b>
-                  <p>
-                    {p.grams} г ·{" "}
-                    {p.expiresOn
-                      ? `до ${new Date(p.expiresOn + "T12:00:00").toLocaleDateString("ru", { day: "numeric", month: "short" })}`
-                      : "срок не указан"}
-                  </p>
-                  {p.expiresOn && (
-                    <span
-                      className={`expiry-badge ${expiryDays(p.expiresOn)! <= 2 ? "soon" : ""}`}
-                    >
-                      {expiryDays(p.expiresOn)! < 0
-                        ? "Срок прошёл"
-                        : expiryDays(p.expiresOn) === 0
-                          ? "Использовать сегодня"
-                          : `Ещё ${expiryDays(p.expiresOn)} дн.`}
-                    </span>
-                  )}
-                </div>
+          </nav>
+          {pantrySection === "prepared" ? (
+            <PreparedFood app={app} />
+          ) : (
+            <>
+              <div className="filter-chips">
                 <button
-                  className="icon-button"
-                  aria-label={`Изменить ${foodName(p.foodId)}`}
-                  onClick={() => setEditingPantryId(p.id)}
+                  className={filter === "all" ? "selected" : ""}
+                  onClick={() => setFilter("all")}
                 >
-                  <Pencil size={18} />
+                  Все продукты <span>{state.pantry.length}</span>
                 </button>
                 <button
-                  className="icon-button"
-                  aria-label={`Удалить ${foodName(p.foodId)}`}
-                  onClick={() =>
-                    run(() =>
-                      commit({
-                        ...state,
-                        pantry: state.pantry.filter((x) => x.id !== p.id),
-                      }),
-                    )
-                  }
+                  className={filter === "soon" ? "selected" : ""}
+                  onClick={() => setFilter("soon")}
                 >
-                  <Trash2 size={16} />
+                  Скоро использовать
                 </button>
               </div>
-            ))
-          ) : (
-            <Empty>Полка пока пустая. Начни с нескольких продуктов.</Empty>
+              {visible.length ? (
+                visible.map((p) => (
+                  <div className="item" key={p.id}>
+                    <FoodArt foodId={p.foodId} />
+                    <div className="grow">
+                      <button
+                        className="pantry-product-name"
+                        onClick={() => openFoodRecipes(p.foodId)}
+                        aria-label={`Найти рецепты: ${foodName(p.foodId)}`}
+                      >
+                        {foodName(p.foodId)}
+                      </button>
+                      <p>
+                        {p.grams} г ·{" "}
+                        {p.expiresOn
+                          ? `до ${new Date(p.expiresOn + "T12:00:00").toLocaleDateString("ru", { day: "numeric", month: "short" })}`
+                          : "срок не указан"}
+                      </p>
+                      <div className="pantry-product-tags">
+                        {p.expiresOn && (
+                          <span
+                            className={`expiry-badge ${expiryDays(p.expiresOn)! <= 2 ? "soon" : ""}`}
+                          >
+                            {expiryDays(p.expiresOn)! < 0
+                              ? "Срок прошёл"
+                              : expiryDays(p.expiresOn) === 0
+                                ? "Использовать сегодня"
+                                : `Ещё ${expiryDays(p.expiresOn)} дн.`}
+                          </span>
+                        )}
+                        <button
+                          className="pantry-recipes-button"
+                          onClick={() => openFoodRecipes(p.foodId)}
+                          aria-label={`Рецепты с продуктом: ${foodName(p.foodId)}`}
+                        >
+                          <ChefHat size={14} />
+                          Рецепты
+                        </button>
+                        <button
+                          className="pantry-recipes-button"
+                          aria-label={`Записать съеденное: ${foodName(p.foodId)}`}
+                          onClick={() =>
+                            app.openFood(
+                              "Завтрак",
+                              undefined,
+                              "pantry",
+                              p.foodId,
+                            )
+                          }
+                        >
+                          <Plus size={14} />В дневник
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      className="icon-button"
+                      aria-label={`Изменить ${foodName(p.foodId)}`}
+                      onClick={() => setEditingPantryId(p.id)}
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label={`Удалить ${foodName(p.foodId)}`}
+                      onClick={() =>
+                        run(() =>
+                          commit({
+                            ...state,
+                            pantry: state.pantry.filter((x) => x.id !== p.id),
+                          }),
+                        )
+                      }
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <Empty>
+                  {filter === "soon"
+                    ? "Продуктов с ближайшим сроком пока нет."
+                    : "Полка пока пустая. Начни с нескольких продуктов."}
+                </Empty>
+              )}
+              <button className="secondary" onClick={() => setModal("catalog")}>
+                Создать продукт по этикетке
+              </button>
+            </>
           )}
-          <button className="secondary" onClick={() => setModal("food")}>
-            Создать продукт по этикетке
-          </button>
         </>
       )}
     </>

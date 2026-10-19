@@ -1,7 +1,8 @@
+import { RecipeExpiry } from "../components/RecipeExpiry";
 import { RecipeArt } from "../components/FoodArt";
 import { useMemo, useState, useRef, useEffect, type FormEvent } from "react";
 import { foods, recipes } from "../data/catalog";
-import { eat } from "../domain/actions";
+import type { IntakeSource } from "../domain/intake";
 import { expiryDays } from "../domain/input";
 import { localDate, type Ingredient, type Recipe } from "../domain/model";
 import { calculate, sum } from "../domain/nutrition";
@@ -27,12 +28,11 @@ export function useAppController() {
     window.scrollTo?.({ top: 0, behavior: "instant" });
   }
   const [modal, setModal] = useState<
-    "food" | "pantry" | "own" | "profile" | "weight" | null
+    "food" | "catalog" | "pantry" | "own" | "profile" | "weight" | null
   >(null);
   const [selected, setSelected] = useState<Recipe | null>(null);
   const [editingPantryId, setEditingPantryId] = useState<string | null>(null);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
-  const [portionBatchId, setPortionBatchId] = useState<string | null>(null);
   function goBack() {
     if (editingPantryId) {
       setEditingPantryId(null);
@@ -40,10 +40,6 @@ export function useAppController() {
     }
     if (editingEntryId) {
       setEditingEntryId(null);
-      return;
-    }
-    if (portionBatchId) {
-      setPortionBatchId(null);
       return;
     }
     if (selected) {
@@ -59,28 +55,47 @@ export function useAppController() {
   useEffect(() => {
     const button = telegram?.BackButton;
     if (!button) return;
-    if (
-      modal ||
-      selected ||
-      editingPantryId ||
-      editingEntryId ||
-      portionBatchId
-    )
-      button.show();
+    if (modal || selected || editingPantryId || editingEntryId) button.show();
     else button.hide();
     button.onClick(goBack);
     return () => button.offClick(goBack);
-  }, [tab, modal, selected, editingPantryId, editingEntryId, portionBatchId]);
+  }, [tab, modal, selected, editingPantryId, editingEntryId]);
   const [draft, setDraft] = useState<Ingredient[]>([]);
-  const [foodContext, setFoodContext] = useState({
-    meal: "Завтрак",
-    date: localDate(),
-  });
-  function openFood(meal = "Завтрак", date = localDate()) {
-    setFoodContext({ meal, date });
+  const [foodContext, setFoodContext] = useState<{
+    meal: string;
+    date: string;
+    source: IntakeSource;
+    itemId?: string;
+  }>({ meal: "Завтрак", date: localDate(), source: "pantry" });
+  function openFood(
+    meal = "Завтрак",
+    date = localDate(),
+    source: IntakeSource = state.pantry.some((item) => item.grams > 0)
+      ? "pantry"
+      : "other",
+    itemId?: string,
+  ) {
+    setFoodContext({ meal, date, source, itemId });
     setModal("food");
   }
-  const [query, setQuery] = useState("");
+  const [pantryFoodId, setPantryFoodId] = useState<string | null>(null);
+  function openPantry(foodId?: string) {
+    setPantryFoodId(foodId ?? null);
+    setModal("pantry");
+  }
+  const [pantrySection, setPantrySection] = useState<"products" | "prepared">(
+    "products",
+  );
+  function openPreparedFood() {
+    setPantrySection("prepared");
+    setTab("pantry");
+  }
+  const [recipeFoodId, setRecipeFoodId] = useState<string | null>(null);
+  function openFoodRecipes(foodId: string) {
+    setPantrySection("products");
+    setRecipeFoodId(foodId);
+    setTab("recipes");
+  }
   const [diaryDate, setDiaryDate] = useState(localDate());
   const [message, setMessage] = useState("");
   const catalog = useMemo(
@@ -203,8 +218,6 @@ export function useAppController() {
     setSelected,
     draft,
     setDraft,
-    query,
-    setQuery,
     diaryDate,
     setDiaryDate,
     message,
@@ -218,6 +231,12 @@ export function useAppController() {
     foodName,
     available,
     sortedRecipes,
+    pantrySection,
+    setPantrySection,
+    openPreparedFood,
+    recipeFoodId,
+    setRecipeFoodId,
+    openFoodRecipes,
     download,
     syncReminders,
     openRecipe,
@@ -227,8 +246,8 @@ export function useAppController() {
     setEditingPantryId,
     editingEntryId,
     setEditingEntryId,
-    portionBatchId,
-    setPortionBatchId,
+    pantryFoodId,
+    openPantry,
   };
   function recipeCard(r: Recipe) {
     const missing = r.ingredients.filter((i) => available(i.foodId) < i.grams);
@@ -243,6 +262,11 @@ export function useAppController() {
         </div>
         <div className="recipe-content">
           <h3>{r.name}</h3>
+          <RecipeExpiry
+            ingredients={r.ingredients}
+            pantry={state.pantry}
+            catalog={catalog}
+          />
           <p>
             {r.minutes} мин ·{" "}
             {Math.round(calculate(r.ingredients, catalog).kcal / r.servings)}{" "}
@@ -261,7 +285,7 @@ export function useAppController() {
     );
   }
   function recordBatch(id: string) {
-    setPortionBatchId(id);
+    openFood("Завтрак", localDate(), "prepared", id);
   }
 }
 

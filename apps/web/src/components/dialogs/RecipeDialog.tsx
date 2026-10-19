@@ -1,3 +1,4 @@
+import { RecipeExpiry } from "../RecipeExpiry";
 import { Select } from "../Select";
 import { PhotoCredits } from "../PhotoCredits";
 import { RecipeArt } from "../FoodArt";
@@ -10,7 +11,7 @@ export function RecipeDialog({ app }: { app: AppController }) {
   const {
     state,
     commit,
-    setTab,
+    openPreparedFood,
     selected,
     setSelected,
     draft,
@@ -34,6 +35,11 @@ export function RecipeDialog({ app }: { app: AppController }) {
             <summary>Фото и источник</summary>
             <PhotoCredits recipeId={selected.id} />
           </details>
+          <RecipeExpiry
+            ingredients={draft}
+            pantry={state.pantry}
+            catalog={catalog}
+          />
           <h3>Фактический состав</h3>
           {draft.map((i, index) => (
             <div className="ingredient" key={index}>
@@ -118,9 +124,9 @@ export function RecipeDialog({ app }: { app: AppController }) {
                 commit(next);
                 setSelected(null);
                 setMessage(
-                  "Блюдо приготовлено, продукты списаны. Запиши съеденную часть в разделе «Рецепты».",
+                  "Блюдо добавлено на полку в «Готовую еду». Запиши порцию, когда поешь.",
                 );
-                setTab("recipes");
+                openPreparedFood();
               })
             }
           >

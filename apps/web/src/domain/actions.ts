@@ -89,6 +89,7 @@ export function eat(
     approximate: false,
     batchId,
     fraction,
+    source: "Готовая еда",
   };
   return {
     ...state,
@@ -105,9 +106,24 @@ export function eat(
 }
 export function deleteEntry(state: AppState, id: string): AppState {
   const entry = state.diary.find((e) => e.id === id);
+  const pantry = state.pantry.map((item) => ({ ...item }));
+  for (const used of entry?.pantryUsed ?? []) {
+    const existing = pantry.find(
+      (item) => item.id === used.id && item.foodId === used.foodId,
+    );
+    if (existing) existing.grams += used.grams;
+    else
+      pantry.push({
+        ...used,
+        id: pantry.some((item) => item.id === used.id)
+          ? `${id}:restored:${used.id}`
+          : used.id,
+      });
+  }
   return {
     ...state,
     diary: state.diary.filter((e) => e.id !== id),
+    pantry,
     batches: state.batches.map((b) =>
       b.id === entry?.batchId
         ? {

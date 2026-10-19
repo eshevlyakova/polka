@@ -63,7 +63,7 @@ export function TodayScreen({ app }: { app: AppController }) {
             <Macros n={total} />
             <button className="primary" onClick={() => app.openFood()}>
               <Plus size={18} />
-              Добавить еду
+              Записать приём пищи
             </button>
           </section>
           <WeightGoal app={app} />
