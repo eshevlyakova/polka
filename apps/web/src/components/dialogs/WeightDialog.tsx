@@ -11,7 +11,7 @@ function WeightForm({ app }: { app: AppController }) {
   return (
     <Modal title="Записать вес" onClose={() => app.setModal(null)}>
       <form
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           try {
             const data = new FormData(event.currentTarget);
@@ -20,7 +20,7 @@ function WeightForm({ app }: { app: AppController }) {
               Number(String(data.get("kg")).replace(",", ".")),
               String(data.get("date")),
             );
-            app.commit({ ...app.state, profile });
+            await app.commit({ ...app.state, profile });
             app.setModal(null);
             app.setMessage("Вес записан");
           } catch (err) {

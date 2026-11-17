@@ -1,14 +1,6 @@
-import {
-  Check,
-  ChefHat,
-  LockKeyhole,
-  NotebookPen,
-  Sparkles,
-} from "lucide-react";
+import { Check, LockKeyhole } from "lucide-react";
 import { AchievementArt } from "../components/AchievementArt";
 import { ProfileDetails } from "../components/ProfileDetails";
-import { ProfilePreferences } from "../components/ProfilePreferences";
-import { PearMascot } from "../components/PearMascot";
 import { getAchievements, type Achievement } from "../domain/achievements";
 import type { AppController } from "../hooks/useAppController";
 
@@ -16,6 +8,7 @@ function Badge({ item }: { item: Achievement }) {
   return (
     <article
       className={`achievement-tile ${item.unlocked ? "unlocked" : "locked"}`}
+      aria-label={`${item.title}: ${item.unlocked ? "получено" : "ещё впереди"}`}
     >
       <div className={`achievement-medal medal-${item.id}`} aria-hidden="true">
         <AchievementArt kind={item.id} />
@@ -46,45 +39,51 @@ export function ProfileScreen({ app }: { app: AppController }) {
   if (app.tab !== "profile") return null;
   const achievements = getAchievements(app.state);
   const count = achievements.filter((item) => item.unlocked).length;
-  const days = new Set(app.state.diary.map((entry) => entry.date)).size;
   return (
-    <section className="profile-page">
-      <div className="profile-heading">
-        <div>
-          <h1>Мой профиль</h1>
-        </div>
-        <PearMascot pose="proud" message={<>Это всё ты!</>} />
-      </div>
-      <div className="profile-stats">
-        <div>
-          <NotebookPen size={20} />
-          <strong>{days}</strong>
-          <span>дней с записями</span>
-        </div>
-        <div>
-          <ChefHat size={20} />
-          <strong>{app.state.batches.length}</strong>
-          <span>блюд приготовлено</span>
-        </div>
-        <div>
-          <Sparkles size={20} />
-          <strong>
-            {count} / {achievements.length}
-          </strong>
-          <span>достижений</span>
-        </div>
-      </div>
+    <section className="profile-page profile-editorial">
+      <header className="profile-page-heading">
+        <h1>Мой профиль</h1>
+      </header>
       <ProfileDetails app={app} />
+      {app.session?.mode === "account" && (
+        <div className="account-identity">
+          <span>
+            Telegram{" "}
+            {app.session.user.username
+              ? `@${app.session.user.username}`
+              : app.session.user.displayName}
+          </span>
+          <button
+            className="text-button"
+            disabled={app.saving || !!app.saveError}
+            onClick={() =>
+              app.run(() =>
+                app.session?.mode === "account"
+                  ? app.session.logout()
+                  : undefined,
+              )
+            }
+          >
+            Выйти
+          </button>
+        </div>
+      )}
+      {app.session?.mode === "demo" && (
+        <button className="text-button" onClick={app.session.exit}>
+          Войти в свой аккаунт
+        </button>
+      )}
       <div className="section-title">
         <h2>Твоя коллекция</h2>
-        <span className="badge">{count} открыто</span>
+        <span className="badge">
+          {count} из {achievements.length}
+        </span>
       </div>
       <div className="achievements-grid">
         {achievements.map((item) => (
           <Badge key={item.id} item={item} />
         ))}
       </div>
-      <ProfilePreferences app={app} />
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { Select } from "../Select";
 import { Modal } from "../ui";
+import { DateInput } from "../DateInput";
 import { inputNumber } from "../../domain/input";
 import type { AppController } from "../../hooks/useAppController";
 export function QuickEditDialogs({ app }: { app: AppController }) {
@@ -23,13 +24,12 @@ export function QuickEditDialogs({ app }: { app: AppController }) {
           onClose={() => setEditingPantryId(null)}
         >
           <form
-            onSubmit={form((d) => {
+            onSubmit={form(async (d) => {
               const grams = inputNumber(d, "grams", 0.1);
-              const expiresOn = String(d.get("expiresOn") || "");
-              commit({
+              await commit({
                 ...state,
                 pantry: state.pantry.map((p) =>
-                  p.id === product.id ? { ...p, grams, expiresOn } : p,
+                  p.id === product.id ? { ...p, grams } : p,
                 ),
               });
               setEditingPantryId(null);
@@ -46,14 +46,6 @@ export function QuickEditDialogs({ app }: { app: AppController }) {
                 required
               />
             </label>
-            <label>
-              Срок годности
-              <input
-                type="date"
-                name="expiresOn"
-                defaultValue={product.expiresOn}
-              />
-            </label>
             <button className="primary">Сохранить изменения</button>
           </form>
         </Modal>
@@ -61,10 +53,10 @@ export function QuickEditDialogs({ app }: { app: AppController }) {
       {entry && (
         <Modal title="Изменить запись" onClose={() => setEditingEntryId(null)}>
           <form
-            onSubmit={form((d) => {
+            onSubmit={form(async (d) => {
               const name = String(d.get("name")).trim();
               if (!name) throw new Error("Укажи название");
-              commit({
+              await commit({
                 ...state,
                 diary: state.diary.map((e) =>
                   e.id === entry.id
@@ -100,12 +92,7 @@ export function QuickEditDialogs({ app }: { app: AppController }) {
             </label>
             <label>
               Дата
-              <input
-                type="date"
-                name="date"
-                defaultValue={entry.date}
-                required
-              />
+              <DateInput value={entry.date} />
             </label>
             <button className="primary">Сохранить изменения</button>
           </form>

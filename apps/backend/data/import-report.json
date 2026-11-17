@@ -1,0 +1,9 @@
+{
+  "importedAt": "2026-11-06",
+  "recipes": 100,
+  "products": 151,
+  "rejectedProducts": 148,
+  "scope": "Initial Russian-language sample; not the full Russian assortment",
+  "recipeSource": "https://github.com/LukeSmithxyz/based.cooking",
+  "productSource": "https://openfoodfacts.github.io/openfoodfacts-server/api/"
+}

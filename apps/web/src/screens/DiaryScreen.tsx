@@ -1,17 +1,6 @@
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Sunrise,
-  Sun,
-  Moon,
-  Coffee,
-  Award,
-  ArrowUpRight,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Sunrise, Sun, Moon, Coffee } from "lucide-react";
 import { Empty, Macros } from "../components/ui";
 import { WeekStrip } from "../components/WeekStrip";
-import { getAchievements } from "../domain/achievements";
 import { deleteEntry } from "../domain/actions";
 import { sum } from "../domain/nutrition";
 import type { AppController } from "../hooks/useAppController";
@@ -34,20 +23,17 @@ export function DiaryScreen({ app }: { app: AppController }) {
   if (tab !== "diary") return null;
   const records = state.diary.filter((e) => e.date === diaryDate);
   const n = sum(records.map((e) => e.nutrients));
-  const achievements = getAchievements(state);
-  const unlocked = achievements.filter((item) => item.unlocked).length;
   const other = records.filter((e) => !meals.some((m) => m.name === e.meal));
   return (
     <>
       <div className="heading">
         <div>
-          <p className="eyebrow">ТВОЯ ИСТОРИЯ ПИТАНИЯ</p>
           <h1>Дневник</h1>
         </div>
         <button
           className="round"
           aria-label="Записать приём пищи"
-          onClick={() => app.openFood("Завтрак", diaryDate)}
+          onClick={() => app.openFood(undefined, diaryDate)}
         >
           <Plus />
         </button>
@@ -140,21 +126,6 @@ export function DiaryScreen({ app }: { app: AppController }) {
       {!records.length && (
         <Empty>Выбери день с отметкой или добавь первую запись.</Empty>
       )}
-      <button
-        className="achievement-card achievement-link"
-        onClick={() => app.setTab("profile")}
-      >
-        <div className="achievement-icon">
-          <Award size={26} />
-        </div>
-        <div>
-          <h3>Твоя коллекция достижений</h3>
-          <p>
-            Открыто {unlocked} из {achievements.length} · Посмотреть коллекцию
-          </p>
-        </div>
-        <ArrowUpRight size={22} aria-hidden="true" />
-      </button>
     </>
   );
 }

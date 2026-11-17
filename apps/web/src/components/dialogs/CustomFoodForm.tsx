@@ -14,7 +14,7 @@ export function CustomFoodForm({
   return (
     <form
       className="custom-food-form"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         try {
           const data = new FormData(event.currentTarget);
@@ -31,7 +31,7 @@ export function CustomFoodForm({
               carbs: inputNumber(data, "carbs"),
             },
           };
-          app.commit({
+          await app.commit({
             ...app.state,
             customFoods: [...app.state.customFoods, food],
           });

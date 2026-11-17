@@ -22,7 +22,7 @@ export function OwnRecipeDialog({ app }: { app: AppController }) {
       {modal === "own" && (
         <Modal title="Своё блюдо" onClose={() => setModal(null)}>
           <form
-            onSubmit={form((d) => {
+            onSubmit={form(async (d) => {
               const name = String(d.get("name")).trim();
               if (!name) throw new Error("Укажи название");
               const recipe: Recipe = {
@@ -35,7 +35,7 @@ export function OwnRecipeDialog({ app }: { app: AppController }) {
                 ingredients: draft,
                 steps: [],
               };
-              commit(
+              await commit(
                 cook(
                   state,
                   recipe,

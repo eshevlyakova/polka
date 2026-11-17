@@ -7,8 +7,8 @@ export function ProfilePreferences({ app }: { app: AppController }) {
       <h2>Под себя</h2>
       <p className="muted">Цель питания и предпочтения для рецептов.</p>
       <form
-        onSubmit={form((d) => {
-          commit({
+        onSubmit={form(async (d) => {
+          await commit({
             ...state,
             settings: {
               ...state.settings,

@@ -1,3 +1,4 @@
+import { estimateWeight } from "../domain/cooking";
 import {
   type AppState,
   type DiaryEntry,
@@ -38,10 +39,6 @@ export function createDemoState(now = new Date()): AppState {
       } as Record<string, string>
     )[meal],
     source: "Домашняя еда",
-    note:
-      offset === 0 && meal === "Обед"
-        ? "Доела вчерашнюю заготовку — удобно после учёбы."
-        : undefined,
   });
   const breakfast = [
     { foodId: "oats", grams: 55 },
@@ -163,26 +160,30 @@ export function createDemoState(now = new Date()): AppState {
     },
     customFoods: [],
     pantry: [
-      { id: "demo-egg", foodId: "egg", grams: 500, expiresOn: day(8) },
-      { id: "demo-cottage", foodId: "cottage", grams: 400, expiresOn: day(1) },
-      { id: "demo-tomato", foodId: "tomato", grams: 500, expiresOn: day(2) },
-      { id: "demo-chicken", foodId: "chicken", grams: 600, expiresOn: day(2) },
+      { id: "demo-egg", foodId: "egg", grams: 500, expiresOn: "" },
+      { id: "demo-cottage", foodId: "cottage", grams: 400, expiresOn: "" },
+      { id: "demo-tomato", foodId: "tomato", grams: 500, expiresOn: "" },
+      { id: "demo-chicken", foodId: "chicken", grams: 600, expiresOn: "" },
       {
         id: "demo-cucumber",
         foodId: "cucumber",
         grams: 300,
-        expiresOn: day(4),
+        expiresOn: "",
       },
-      { id: "demo-rice", foodId: "rice", grams: 500, expiresOn: day(120) },
-      { id: "demo-oil", foodId: "oil", grams: 200, expiresOn: day(90) },
-      { id: "demo-banana", foodId: "banana", grams: 400, expiresOn: day(3) },
-      { id: "demo-oats", foodId: "oats", grams: 350, expiresOn: day(150) },
-      { id: "demo-milk", foodId: "milk", grams: 500, expiresOn: day(3) },
-      { id: "demo-yogurt", foodId: "yogurt", grams: 340, expiresOn: day(5) },
-    ],
+      { id: "demo-rice", foodId: "rice", grams: 500, expiresOn: "" },
+      { id: "demo-oil", foodId: "oil", grams: 200, expiresOn: "" },
+      { id: "demo-banana", foodId: "banana", grams: 400, expiresOn: "" },
+      { id: "demo-oats", foodId: "oats", grams: 350, expiresOn: "" },
+      { id: "demo-milk", foodId: "milk", grams: 500, expiresOn: "" },
+      { id: "demo-yogurt", foodId: "yogurt", grams: 340, expiresOn: "" },
+    ].map((item, index) => ({
+      ...item,
+      addedAt: day(-(index % 4)) + "T12:00:00.000Z",
+    })),
     batches: [
       {
         id: "demo-cooked-chicken",
+        estimatedWeightGrams: estimateWeight(recipe),
         recipeName: "Курица с рисом",
         cookedAt: new Date(
           now.getFullYear(),
@@ -193,6 +194,45 @@ export function createDemoState(now = new Date()): AppState {
         nutrients: calculate(recipe.ingredients, foods),
         remainingFraction: 1 / 3,
         servings: 3,
+      },
+      {
+        id: "demo-cooked-omelet",
+        estimatedWeightGrams: estimateWeight(
+          recipes.find((r) => r.id === "omelet")!,
+        ),
+        recipeName: "Омлет с томатами",
+        cookedAt: new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          9,
+        ).toISOString(),
+        nutrients: calculate(
+          recipes.find((r) => r.id === "omelet")!.ingredients,
+          foods,
+        ),
+        remainingFraction: 1,
+        servings: 2,
+      },
+      {
+        id: "demo-cooked-cottage",
+        estimatedWeightGrams: 600,
+        recipeName: "Творог с бананом",
+        cookedAt: new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          10,
+        ).toISOString(),
+        nutrients: calculate(
+          [
+            { foodId: "cottage", grams: 400 },
+            { foodId: "banana", grams: 200 },
+          ],
+          foods,
+        ),
+        remainingFraction: 1,
+        servings: 2,
       },
     ],
     diary: diary.reverse(),

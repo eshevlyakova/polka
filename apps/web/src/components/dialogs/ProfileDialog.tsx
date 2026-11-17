@@ -13,14 +13,17 @@ function ProfileForm({ app }: { app: AppController }) {
   return (
     <Modal title="Данные профиля" onClose={() => app.setModal(null)}>
       <form
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           try {
-            const profile = updateProfile(
-              app.state.profile,
-              profileFromForm(new FormData(event.currentTarget)),
-            );
-            app.commit({ ...app.state, profile });
+            const edited = profileFromForm(new FormData(event.currentTarget));
+            const profile = updateProfile(app.state.profile, {
+              ...app.state.profile,
+              ...edited,
+              age: edited.age,
+              heightCm: edited.heightCm,
+            });
+            await app.commit({ ...app.state, profile });
             app.setModal(null);
             app.setMessage("Профиль сохранён");
           } catch (err) {
@@ -47,21 +50,26 @@ function ProfileForm({ app }: { app: AppController }) {
           />
         </label>
         <div className="fields">
-          {profileFields.map((field) => (
-            <label key={field.key}>
-              {field.label}, {field.unit}
-              <input
-                name={field.key}
-                type="number"
-                inputMode={field.key === "age" ? "numeric" : "decimal"}
-                min={field.min}
-                max={field.max}
-                step={field.step}
-                defaultValue={app.state.profile?.[field.key] ?? ""}
-                placeholder="Не указан"
-              />
-            </label>
-          ))}
+          {profileFields
+            .filter(
+              (field) =>
+                field.key !== "weightKg" && field.key !== "targetWeightKg",
+            )
+            .map((field) => (
+              <label key={field.key}>
+                {field.label}, {field.unit}
+                <input
+                  name={field.key}
+                  type="number"
+                  inputMode={field.key === "age" ? "numeric" : "decimal"}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  defaultValue={app.state.profile?.[field.key] ?? ""}
+                  placeholder="Не указан"
+                />
+              </label>
+            ))}
         </div>
         {error && (
           <p className="notice error" role="alert">

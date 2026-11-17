@@ -23,6 +23,7 @@ jobs:
       - run: npm run check
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_AI_API_URL: ${{ vars.VITE_AI_API_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

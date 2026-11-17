@@ -55,7 +55,10 @@ export function Modal({
           panel.current?.querySelectorAll<HTMLElement>(
             'button,input:not([type="hidden"]),select,textarea,a[href],[tabindex="0"]',
           ) ?? [],
-        ).filter((el) => !el.hasAttribute("disabled"));
+        ).filter(
+          (el) =>
+            !el.hasAttribute("disabled") && el.getClientRects().length > 0,
+        );
         const first = elements[0],
           last = elements[elements.length - 1];
         if (

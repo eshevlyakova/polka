@@ -1,0 +1,26 @@
+{
+  "importedAt": "2026-11-07T12:12:53.004437+00:00",
+  "before": 151,
+  "total": 302,
+  "added": 151,
+  "rejected": 90,
+  "requests": [
+    {
+      "url": "https://world.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=countries&tag_contains_0=contains&tag_0=russia&tagtype_1=categories&tag_contains_1=contains&tag_1=dairies&page_size=100&page=1&sort_by=unique_scans_n&json=1&fields=code%2Cproduct_name%2Cproduct_name_ru%2Cbrands%2Cnutriments%2Cquantity%2Ccategories_tags%2Ccountries_tags%2Clast_modified_t",
+      "sha256": "3aae99ae58fe21aadfc5cf78fdcf37d96cd0d0f586f2c59b0b12ef8aa352582a",
+      "returned": 99
+    },
+    {
+      "url": "https://world.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=countries&tag_contains_0=contains&tag_0=russia&tagtype_1=categories&tag_contains_1=contains&tag_1=cereals-and-their-products&page_size=100&page=1&sort_by=unique_scans_n&json=1&fields=code%2Cproduct_name%2Cproduct_name_ru%2Cbrands%2Cnutriments%2Cquantity%2Ccategories_tags%2Ccountries_tags%2Clast_modified_t",
+      "sha256": "612ea133d01abc46af3908393a4dca657e42286cf3223244783c7d91d3cbc8d5",
+      "returned": 100
+    },
+    {
+      "url": "https://world.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=countries&tag_contains_0=contains&tag_0=russia&tagtype_1=categories&tag_contains_1=contains&tag_1=fruits-and-vegetables-based-foods&page_size=100&page=1&sort_by=unique_scans_n&json=1&fields=code%2Cproduct_name%2Cproduct_name_ru%2Cbrands%2Cnutriments%2Cquantity%2Ccategories_tags%2Ccountries_tags%2Clast_modified_t",
+      "sha256": "9c0b526bff331040c9820b5e4429f080aea7fed3af915fd839f8f9721b1c2efc",
+      "returned": 100
+    }
+  ],
+  "license": "ODbL-1.0",
+  "scope": "Three bounded Russian-market category samples; not a complete assortment"
+}

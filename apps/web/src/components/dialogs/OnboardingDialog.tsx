@@ -22,8 +22,7 @@ export function OnboardingDialog({ app }: { app: AppController }) {
             вводить не нужно.
           </p>
           <p className="muted">
-            Данные хранятся только на этом устройстве. Расчёты зависят от
-            состава и указанных количеств.
+            Расчёты зависят от состава и указанных количеств.
           </p>
           <button
             className="primary"

@@ -1,6 +1,6 @@
-import { Select } from "../Select";
 import type { Batch } from "../../domain/model";
-export type PortionUnit = "servings" | "percent";
+import { formatAmount, batchWeight, portionLabel } from "../../domain/cooking";
+export type PortionUnit = "servings" | "percent" | "grams";
 export function PortionFields({
   batch,
   unit,
@@ -17,41 +17,44 @@ export function PortionFields({
   return (
     <>
       <p className="intake-stock">
-        Осталось{" "}
-        {(batch.remainingFraction * batch.servings).toLocaleString("ru", {
-          maximumFractionDigits: 2,
-        })}{" "}
-        из {batch.servings} равных порций ·{" "}
-        {Math.round(batch.remainingFraction * 100)}% блюда
+        Осталось {formatAmount(batch.remainingFraction * batch.servings)} из{" "}
+        {batch.servings} порций
       </p>
+      <div className="portion-modes" aria-label="Как указать съеденное">
+        {(
+          [
+            ["servings", "Порции"],
+            ["percent", "% блюда"],
+            ...(batchWeight(batch) ? [["grams", "Граммы"]] : []),
+          ] as [PortionUnit, string][]
+        ).map(([id, label]) => (
+          <button
+            type="button"
+            key={id}
+            aria-pressed={unit === id}
+            onClick={() => onUnit(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <label>
-        Как указать количество
-        <Select
-          value={unit}
-          onChange={(event) => onUnit(event.target.value as PortionUnit)}
-        >
-          <option value="servings">Равные порции</option>
-          <option value="percent">Процент всего блюда</option>
-        </Select>
-      </label>
-      <label>
-        {unit === "servings" ? "Количество порций" : "Доля блюда, %"}
+        {unit === "servings"
+          ? "Количество порций"
+          : unit === "grams"
+            ? "Масса порции, г"
+            : "Доля блюда, %"}
         <input
-          name="portion"
           type="number"
           inputMode="decimal"
           min="0.0001"
           step="any"
-          max={
-            unit === "servings"
-              ? batch.remainingFraction * batch.servings
-              : batch.remainingFraction * 100
-          }
           value={amount}
-          onChange={(event) => onAmount(event.target.value)}
+          onChange={(e) => onAmount(e.target.value)}
           required
         />
       </label>
+      <p className="intake-measure-note">{portionLabel(batch)}</p>
     </>
   );
 }

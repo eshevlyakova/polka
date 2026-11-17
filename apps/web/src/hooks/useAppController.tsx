@@ -1,15 +1,57 @@
-import { RecipeExpiry } from "../components/RecipeExpiry";
+import {
+  Sparkles,
+  Clock3,
+  CheckCircle2,
+  ShoppingBasket,
+  ArrowUpRight,
+} from "lucide-react";
+import { shortages } from "../domain/cooking";
+import { currentMeal } from "../domain/meal";
+import { useRecipeLibrary } from "./useRecipeLibrary";
+import type { LibraryCard } from "../../../../shared/recipeLibrary";
+import { recipePriority } from "../domain/recipePriority";
 import { RecipeArt } from "../components/FoodArt";
 import { useMemo, useState, useRef, useEffect, type FormEvent } from "react";
 import { foods, recipes } from "../data/catalog";
 import type { IntakeSource } from "../domain/intake";
-import { expiryDays } from "../domain/input";
 import { localDate, type Ingredient, type Recipe } from "../domain/model";
 import { calculate, sum } from "../domain/nutrition";
 import { usePolkaState } from "../hooks/usePolkaState";
 import { telegram } from "../telegram";
-type Tab = "today" | "pantry" | "recipes" | "diary" | "profile";
+type Tab = "home" | "pantry" | "diary" | "profile";
 export function useAppController() {
+  const library = useRecipeLibrary();
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryRecipeId, setLibraryRecipeId] = useState<string | null>(null);
+  const libraryScroll = useRef(0);
+  function openLibrary() {
+    libraryScroll.current = 0;
+    setLibraryOpen(true);
+    setLibraryRecipeId(null);
+    window.history.pushState({ polkaLibrary: true }, "", "#recipes");
+    window.scrollTo?.(0, 0);
+  }
+  function openLibraryRecipe(recipe: LibraryCard) {
+    libraryScroll.current = window.scrollY;
+    setLibraryRecipeId(recipe.id);
+    window.history.pushState(
+      { polkaLibrary: true },
+      "",
+      `#library=${encodeURIComponent(recipe.id)}`,
+    );
+    window.scrollTo?.(0, 0);
+  }
+  function closeLibrary() {
+    setLibraryOpen(false);
+    setLibraryRecipeId(null);
+    if (window.history.state?.polkaLibrary) window.history.back();
+    else
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
+  }
   const {
     state,
     setState,
@@ -18,8 +60,12 @@ export function useAppController() {
     storageBlocked,
     setStorageBlocked,
     commit,
+    session,
+    saving,
+    saveError,
+    retrySave,
   } = usePolkaState();
-  const [tab, setTabState] = useState<Tab>("today");
+  const [tab, setTabState] = useState<Tab>("home");
   const history = useRef<Tab[]>([]);
   function setTab(next: Tab) {
     if (next === tab) return;
@@ -28,12 +74,22 @@ export function useAppController() {
     window.scrollTo?.({ top: 0, behavior: "instant" });
   }
   const [modal, setModal] = useState<
-    "food" | "catalog" | "pantry" | "own" | "profile" | "weight" | null
+    | "food"
+    | "catalog"
+    | "pantry"
+    | "add-pantry"
+    | "receipt"
+    | "own"
+    | "profile"
+    | "weight"
+    | null
   >(null);
   const [selected, setSelected] = useState<Recipe | null>(null);
+  const [recipeServings, setRecipeServings] = useState(1);
   const [editingPantryId, setEditingPantryId] = useState<string | null>(null);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   function goBack() {
+    if (saving || saveError) return;
     if (editingPantryId) {
       setEditingPantryId(null);
       return;
@@ -42,33 +98,55 @@ export function useAppController() {
       setEditingEntryId(null);
       return;
     }
-    if (selected) {
-      setSelected(null);
-      return;
-    }
     if (modal) {
       setModal(null);
       return;
     }
-    setTabState(history.current.pop() ?? "today");
+    if (selected) {
+      closeRecipe();
+      return;
+    }
+    if (libraryRecipeId || libraryOpen) {
+      closeLibrary();
+      return;
+    }
+    setTabState(history.current.pop() ?? "home");
   }
   useEffect(() => {
     const button = telegram?.BackButton;
     if (!button) return;
-    if (modal || selected || editingPantryId || editingEntryId) button.show();
+    if (
+      modal ||
+      selected ||
+      editingPantryId ||
+      editingEntryId ||
+      libraryOpen ||
+      libraryRecipeId
+    )
+      button.show();
     else button.hide();
     button.onClick(goBack);
     return () => button.offClick(goBack);
-  }, [tab, modal, selected, editingPantryId, editingEntryId]);
+  }, [
+    tab,
+    modal,
+    selected,
+    editingPantryId,
+    editingEntryId,
+    libraryOpen,
+    libraryRecipeId,
+    saving,
+    saveError,
+  ]);
   const [draft, setDraft] = useState<Ingredient[]>([]);
   const [foodContext, setFoodContext] = useState<{
     meal: string;
     date: string;
     source: IntakeSource;
     itemId?: string;
-  }>({ meal: "Завтрак", date: localDate(), source: "pantry" });
+  }>({ meal: currentMeal(), date: localDate(), source: "pantry" });
   function openFood(
-    meal = "Завтрак",
+    meal = currentMeal(),
     date = localDate(),
     source: IntakeSource = state.pantry.some((item) => item.grams > 0)
       ? "pantry"
@@ -81,7 +159,7 @@ export function useAppController() {
   const [pantryFoodId, setPantryFoodId] = useState<string | null>(null);
   function openPantry(foodId?: string) {
     setPantryFoodId(foodId ?? null);
-    setModal("pantry");
+    setModal(foodId ? "pantry" : "add-pantry");
   }
   const [pantrySection, setPantrySection] = useState<"products" | "prepared">(
     "products",
@@ -90,11 +168,22 @@ export function useAppController() {
     setPantrySection("prepared");
     setTab("pantry");
   }
+  function finishCooking() {
+    setSelected(null);
+    setLibraryRecipeId(null);
+    setLibraryOpen(false);
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
+    openPreparedFood();
+  }
   const [recipeFoodId, setRecipeFoodId] = useState<string | null>(null);
   function openFoodRecipes(foodId: string) {
     setPantrySection("products");
     setRecipeFoodId(foodId);
-    setTab("recipes");
+    setTab("home");
   }
   const [diaryDate, setDiaryDate] = useState(localDate());
   const [message, setMessage] = useState("");
@@ -105,9 +194,9 @@ export function useAppController() {
   const total = sum(
     state.diary.filter((e) => e.date === localDate()).map((e) => e.nutrients),
   );
-  function run(action: () => void) {
+  async function run(action: () => void | Promise<void>) {
     try {
-      action();
+      await action();
       setError("");
     } catch (e) {
       setError(
@@ -118,8 +207,55 @@ export function useAppController() {
   function openRecipe(recipe: Recipe) {
     setSelected(recipe);
     setDraft(recipe.ingredients.map((i) => ({ ...i })));
+    setRecipeServings(recipe.servings);
+    if (window.location.hash !== `#recipe=${encodeURIComponent(recipe.id)}`)
+      window.history.pushState(
+        { polkaRecipe: true },
+        "",
+        `#recipe=${encodeURIComponent(recipe.id)}`,
+      );
+    window.scrollTo?.({ top: 0, behavior: "instant" });
   }
-  function form(handler: (d: FormData) => void) {
+  function closeRecipe() {
+    setSelected(null);
+    if (window.location.hash.startsWith("#recipe=")) {
+      if (window.history.state?.polkaRecipe) window.history.back();
+      else
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
+    }
+    window.scrollTo?.({ top: 0, behavior: "instant" });
+  }
+  useEffect(() => {
+    function route() {
+      const params = new URLSearchParams(window.location.hash.slice(1));
+      setLibraryRecipeId(params.get("library"));
+      const results = window.location.hash === "#recipes";
+      setLibraryOpen(results);
+      if (results)
+        window.requestAnimationFrame?.(() =>
+          window.scrollTo?.(0, libraryScroll.current),
+        );
+      const id = new URLSearchParams(window.location.hash.slice(1)).get(
+        "recipe",
+      );
+      const recipe = [...recipes, ...(state.aiRecipes ?? [])].find(
+        (r) => r.id === id,
+      );
+      setSelected(recipe ?? null);
+      if (recipe) {
+        setDraft(recipe.ingredients.map((i) => ({ ...i })));
+        setRecipeServings(recipe.servings);
+      }
+    }
+    route();
+    window.addEventListener("popstate", route);
+    return () => window.removeEventListener("popstate", route);
+  }, [state.aiRecipes]);
+  function form(handler: (d: FormData) => void | Promise<void>) {
     return (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
@@ -145,8 +281,12 @@ export function useAppController() {
     )
     .sort(
       (a, b) =>
+        Number(b.ingredients.every((i) => available(i.foodId) >= i.grams)) -
+          Number(a.ingredients.every((i) => available(i.foodId) >= i.grams)) ||
+        recipePriority(b.ingredients, state.pantry, catalog) -
+          recipePriority(a.ingredients, state.pantry, catalog) ||
         b.ingredients.filter((i) => available(i.foodId) >= i.grams).length -
-        a.ingredients.filter((i) => available(i.foodId) >= i.grams).length,
+          a.ingredients.filter((i) => available(i.foodId) >= i.grams).length,
     );
   function download(raw: string) {
     const url = URL.createObjectURL(
@@ -158,50 +298,15 @@ export function useAppController() {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  async function syncReminders(enabled: boolean) {
-    const api = import.meta.env.VITE_API_URL;
-    if (!api || !telegram?.initData) {
-      setError("Нужен настроенный бэкенд и открытие через Telegram");
-      return;
-    }
-    try {
-      const soon = state.pantry.filter(
-        (p) =>
-          p.expiresOn &&
-          expiryDays(p.expiresOn)! >= 0 &&
-          expiryDays(p.expiresOn)! <= 2,
-      );
-      const body = enabled
-        ? {
-            enabled: true,
-            items: soon.map((p) => ({
-              name: foodName(p.foodId),
-              expiresOn: p.expiresOn,
-            })),
-          }
-        : { enabled: false, items: [] };
-      const response = await fetch(`${api}/api/reminders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `tma ${telegram.initData}`,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok)
-        throw new Error(
-          "Не удалось обновить напоминания. Открой приложение заново; сначала нажми /start в боте.",
-        );
-      setMessage(
-        enabled
-          ? "Сроки на ближайшие 2 дня переданы боту. После изменения полки обнови их снова."
-          : "Ожидающие напоминания отключены.",
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка сети");
-    }
-  }
+
   return {
+    library,
+    libraryOpen,
+    libraryRecipeId,
+    openLibrary,
+    openLibraryRecipe,
+    closeLibrary,
+    finishCooking,
     state,
     setState,
     error,
@@ -209,6 +314,10 @@ export function useAppController() {
     storageBlocked,
     setStorageBlocked,
     commit,
+    session,
+    saving,
+    saveError,
+    retrySave,
     tab,
     setTab,
     goBack,
@@ -216,6 +325,9 @@ export function useAppController() {
     setModal,
     selected,
     setSelected,
+    recipeServings,
+    setRecipeServings,
+    closeRecipe,
     draft,
     setDraft,
     diaryDate,
@@ -238,7 +350,6 @@ export function useAppController() {
     setRecipeFoodId,
     openFoodRecipes,
     download,
-    syncReminders,
     openRecipe,
     recipeCard,
     recordBatch,
@@ -250,42 +361,73 @@ export function useAppController() {
     openPantry,
   };
   function recipeCard(r: Recipe) {
-    const missing = r.ingredients.filter((i) => available(i.foodId) < i.grams);
+    const missing = shortages(r.ingredients, state.pantry, catalog);
     return (
       <button
         className="card recipe-card"
         key={r.id}
         onClick={() => openRecipe(r)}
       >
-        <div className="recipe-art">
-          <RecipeArt recipeId={r.id} />
-        </div>
+        {r.source === "ai" ? (
+          <div className="ai-recipe-label">
+            <Sparkles size={17} />
+            Для тебя
+          </div>
+        ) : (
+          <div className="recipe-art">
+            <RecipeArt recipeId={r.id} />
+            <span className="recipe-time">
+              <Clock3 size={14} />
+              {r.minutes} мин
+            </span>
+          </div>
+        )}
         <div className="recipe-content">
           <h3>{r.name}</h3>
-          <RecipeExpiry
-            ingredients={r.ingredients}
-            pantry={state.pantry}
-            catalog={catalog}
-          />
           <p>
-            {r.minutes} мин ·{" "}
-            {Math.round(calculate(r.ingredients, catalog).kcal / r.servings)}{" "}
+            {r.source === "ai" ? `${r.minutes} мин · ` : ""}
+            {Math.round(
+              calculate(r.ingredients, catalog).kcal / r.servings,
+            )}{" "}
             ккал / порция
           </p>
-          <span className="badge">
+          <span
+            className={`badge recipe-availability ${missing.length ? "needs-products" : ""}`}
+          >
+            {missing.length ? (
+              <ShoppingBasket size={14} />
+            ) : (
+              <CheckCircle2 size={14} />
+            )}
             {missing.length
-              ? `Нужно добавить ${missing.length} продукта`
+              ? missing.length === 1
+                ? "Не всё есть на полке"
+                : `Не хватает ${missing.length} продуктов`
               : "Всё есть на полке"}
           </span>
+          {!!missing.length && (
+            <div
+              className="recipe-missing-list"
+              aria-label="Недостающие продукты"
+            >
+              {missing.slice(0, 3).map((i) => (
+                <span key={i.foodId}>{i.name}</span>
+              ))}
+              {missing.length > 3 && <span>ещё {missing.length - 3}</span>}
+            </div>
+          )}
           <span className="recipe-action">
-            Посмотреть рецепт <span>↗</span>
+            Посмотреть рецепт{" "}
+            <span>
+              <ArrowUpRight size={20} />
+            </span>
           </span>
         </div>
       </button>
     );
   }
   function recordBatch(id: string) {
-    openFood("Завтрак", localDate(), "prepared", id);
+    openFood(currentMeal(), localDate(), "prepared", id);
   }
 }
 

@@ -151,9 +151,6 @@ export function WeekStrip({
               ),
             )}
           </div>
-          <p className="muted calendar-legend">
-            Точкой отмечены дни с записями.
-          </p>
           <button
             className="secondary"
             onClick={() => {

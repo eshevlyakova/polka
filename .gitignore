@@ -6,3 +6,6 @@ dist/
 .wrangler/
 coverage/
 *.log
+dist-ai/
+apps/backend/dist/
+apps/web/public/catalog/

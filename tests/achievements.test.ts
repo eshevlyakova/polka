@@ -32,7 +32,7 @@ it("counts distinct diary dates rather than entries and recalculates after delet
 
 it("suggests the closest unfinished achievement and handles a completed collection", () => {
   const achievements = getAchievements(createDemoState());
-  expect(getNextAchievement(achievements)?.id).toBe("variety");
+  expect(getNextAchievement(achievements)?.id).toBe("own");
   expect(
     getNextAchievement(
       achievements.map((item) => ({

@@ -1,6 +1,7 @@
 import { ChefHat, Plus } from "lucide-react";
 import { Empty, Macros } from "./ui";
 import { scale } from "../domain/nutrition";
+import { portionLabel } from "../domain/cooking";
 import type { AppController } from "../hooks/useAppController";
 
 export function PreparedFood({ app }: { app: AppController }) {
@@ -9,9 +10,6 @@ export function PreparedFood({ app }: { app: AppController }) {
   );
   return (
     <section className="prepared-food" aria-label="Готовая еда">
-      <p className="muted prepared-intro">
-        Уже приготовлено — осталось выбрать, сколько съесть.
-      </p>
       {batches.length ? (
         batches.map((batch) => (
           <article className="card prepared-card" key={batch.id}>
@@ -39,14 +37,15 @@ export function PreparedFood({ app }: { app: AppController }) {
                 )}{" "}
                 из {batch.servings} порций
               </strong>
-              <span>{Math.round(batch.remainingFraction * 100)}% блюда</span>
             </div>
             <progress
+              title={portionLabel(batch)}
               value={batch.remainingFraction}
               max={1}
               aria-label={`Остаток блюда: ${Math.round(batch.remainingFraction * 100)}%`}
             />
             <p className="prepared-macros-label">КБЖУ оставшейся части</p>
+            <p className="intake-measure-note">{portionLabel(batch)}</p>
             <Macros n={scale(batch.nutrients, batch.remainingFraction)} />
             <button
               className="secondary"
@@ -58,16 +57,13 @@ export function PreparedFood({ app }: { app: AppController }) {
           </article>
         ))
       ) : (
-        <Empty>
-          Пока нет готовой еды. Приготовь блюдо по рецепту или добавь своё — оно
-          появится здесь.
-        </Empty>
+        <Empty>Пока нет готовой еды.</Empty>
       )}
       <button
         className="secondary"
         onClick={() => {
           app.setRecipeFoodId(null);
-          app.setTab("recipes");
+          app.setTab("home");
         }}
       >
         <ChefHat size={18} />

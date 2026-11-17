@@ -520,7 +520,7 @@ progress::-moz-progress-bar {
   max-width: 520px;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   background: #fffdf8f5;
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--line);
@@ -2387,35 +2387,6 @@ h1 {
   margin: 16px 0;
 }
 
-.recipe-expiry {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  margin: 12px 0;
-  border: 1px solid #edd3b4;
-  border-radius: 13px;
-  background: #faebd9;
-  color: #79512d;
-  text-align: left;
-}
-.recipe-expiry-title {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14px;
-  font-weight: 800;
-}
-.recipe-expiry-title svg {
-  flex-shrink: 0;
-}
-.recipe-expiry-products {
-  font-size: 13px;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-  font-weight: 500;
-}
-
 .pantry-product-name {
   display: block;
   min-height: 44px;
@@ -2676,5 +2647,247 @@ h1 {
 @media (max-width: 360px) {
   .intake-sources button {
     font-size: 12px;
+  }
+}
+
+.ai-recipes {
+  margin: 24px 0 28px;
+  padding: 20px 16px;
+  border: 1px solid #d8e2ca;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #edf2e2, #f8f4e8);
+}
+.ai-recipes-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--green);
+}
+.ai-recipes-heading > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.ai-recipes-heading h2 {
+  font-size: 21px;
+}
+.ai-recipes-heading p {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.ai-preferences-form label {
+  font-size: 15px;
+}
+.ai-preferences-form textarea {
+  resize: vertical;
+  min-height: 76px;
+}
+.ai-preferences-form > label:first-child {
+  margin-top: 0;
+}
+
+/* Home combines recipe discovery and personal suggestions. */
+.home-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.home-heading h1 {
+  font-size: clamp(23px, 6.3vw, 28px);
+  line-height: 1.15;
+  text-wrap: balance;
+  margin: 0 0 10px;
+}
+.home-heading .muted {
+  margin: 0;
+  line-height: 1.5;
+}
+.home-heading .mascot {
+  width: 104px;
+  height: auto;
+  justify-self: end;
+}
+.home-page .ai-recipes {
+  margin: 0 0 20px;
+  padding: 18px;
+}
+.home-time-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(156px, 55%);
+  align-items: center;
+  gap: 12px;
+}
+.home-time-filter .custom-select {
+  min-width: 0;
+}
+.home-prepared {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #ead7c0;
+  border-radius: 18px;
+  background: #faecdb;
+  color: var(--green);
+  text-align: left;
+}
+.home-prepared-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #fff8ee;
+}
+.home-prepared-copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+.home-prepared-copy > span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #77634d;
+}
+.home-recipes-heading {
+  margin: 28px 0 16px;
+}
+.home-own-recipe {
+  width: 100%;
+  margin-top: 14px;
+}
+@media (max-height: 650px) {
+  .home-heading .mascot {
+    height: 96px;
+  }
+}
+
+/* Let product details use the full row below its title and action buttons. */
+.pantry-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  column-gap: 10px;
+  row-gap: 8px;
+  align-items: start;
+  padding: 14px 12px;
+}
+.pantry-item .food-art {
+  width: 48px;
+  height: 48px;
+}
+.pantry-item .pantry-product-name {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  line-height: 1.45;
+}
+.pantry-item-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+.pantry-item .pantry-item-actions .icon-button {
+  width: 36px;
+  min-width: 36px;
+  min-height: 44px;
+  padding: 4px;
+}
+.pantry-item .pantry-product-tags {
+  grid-column: 2 / -1;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  gap: 8px;
+}
+.pantry-product-tags > * {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pantry-product-tags .expiry-badge {
+  font-size: 12px;
+}
+@media (max-width: 360px) {
+  .home-heading {
+    grid-template-columns: minmax(0, 1fr) 86px;
+    gap: 8px;
+  }
+  .home-heading .mascot {
+    width: 86px;
+  }
+  .pantry-item {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    column-gap: 8px;
+    padding: 12px 10px;
+  }
+  .pantry-item .food-art {
+    width: 40px;
+    height: 40px;
+  }
+}
+.ai-form-hint {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.ai-preferences-form .primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ai-preferences-form button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.ai-access {
+  margin: 0 0 16px;
+}
+.ai-access summary,
+.ai-access .muted {
+  font-size: 13px;
+}
+.ai-access .muted {
+  display: block;
+  margin-top: 6px;
+}
+.ai-results {
+  margin-top: 24px;
+}
+.ai-results .section-title h3 {
+  font-size: 18px;
+}
+.ai-results .recipe-card {
+  width: 100%;
+}
+.ai-recipe-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 0;
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--green);
+}
+.ai-success {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--green);
+  line-height: 1.55;
+}
+.local-recipes-title {
+  margin: 24px 0 16px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ai-spinner {
+    animation: ai-spin 1.2s linear infinite;
+  }
+  @keyframes ai-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 }

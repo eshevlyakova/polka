@@ -1,20 +1,14 @@
-import {
-  Pencil,
-  UserRound,
-  Ruler,
-  Scale,
-  Flag,
-  CalendarDays,
-} from "lucide-react";
+import { Pencil } from "lucide-react";
 import type { AppController } from "../hooks/useAppController";
+import { ProfilePearArt } from "./ProfilePearArt";
 import { telegram } from "../telegram";
 
 export function ProfileDetails({ app }: { app: AppController }) {
   const profile = app.state.profile;
   const name =
-    profile?.name || telegram?.initDataUnsafe?.user?.first_name?.trim();
-  const format = (value: number | undefined, unit: string) =>
-    value === undefined ? "Не указан" : `${value.toLocaleString("ru")} ${unit}`;
+    profile?.name ||
+    telegram?.initDataUnsafe?.user?.first_name?.trim() ||
+    "Твой профиль";
   const age = profile?.age;
   const ageUnit =
     age !== undefined && age % 10 === 1 && age % 100 !== 11
@@ -24,55 +18,45 @@ export function ProfileDetails({ app }: { app: AppController }) {
           ![12, 13, 14].includes(age % 100)
         ? "года"
         : "лет";
+  const details = [
+    age === undefined ? null : `${age} ${ageUnit}`,
+    profile?.heightCm === undefined
+      ? null
+      : `${profile.heightCm.toLocaleString("ru")} см`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const days = new Set(app.state.diary.map((entry) => entry.date)).size;
   return (
     <section
-      className="profile-details card"
+      className="profile-identity"
       aria-labelledby="profile-details-title"
     >
-      <div className="profile-details-heading">
-        <h2 id="profile-details-title">О тебе</h2>
-        <button className="text-button" onClick={() => app.setModal("profile")}>
-          <Pencil size={16} />
-          Изменить
-        </button>
-      </div>
-      <div className="profile-person">
-        <span className="profile-avatar">
-          <UserRound size={26} />
-        </span>
-        <div>
-          <span className="profile-field-label">Имя</span>
-          <strong>{name || "Как тебя зовут?"}</strong>
+      <div className="profile-identity-top">
+        <div className="profile-identity-copy">
+          <h2 id="profile-details-title">О тебе</h2>
+          <p className="profile-display-name">{name}</p>
+          {details && <p className="profile-personal-line">{details}</p>}
+          <button
+            className="text-button"
+            onClick={() => app.setModal("profile")}
+          >
+            <Pencil size={14} />
+            Изменить
+          </button>
+        </div>
+        <div className="profile-identity-art">
+          <ProfilePearArt />
         </div>
       </div>
-      <dl className="profile-measurements">
+      <dl className="profile-activity">
         <div>
-          <dt>
-            <CalendarDays size={17} />
-            Возраст
-          </dt>
-          <dd>{format(age, ageUnit)}</dd>
+          <dd>{days}</dd>
+          <dt>дней с записями</dt>
         </div>
         <div>
-          <dt>
-            <Ruler size={17} />
-            Рост
-          </dt>
-          <dd>{format(profile?.heightCm, "см")}</dd>
-        </div>
-        <div>
-          <dt>
-            <Scale size={17} />
-            Текущий вес
-          </dt>
-          <dd>{format(profile?.weightKg, "кг")}</dd>
-        </div>
-        <div className="profile-target">
-          <dt>
-            <Flag size={17} />
-            Желаемый вес
-          </dt>
-          <dd>{format(profile?.targetWeightKg, "кг")}</dd>
+          <dd>{app.state.batches.length}</dd>
+          <dt>блюд приготовлено</dt>
         </div>
       </dl>
     </section>

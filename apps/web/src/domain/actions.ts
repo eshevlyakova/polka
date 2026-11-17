@@ -8,6 +8,7 @@ import type {
 } from "./model";
 import { localDate } from "./model";
 import { calculate, scale } from "./nutrition";
+import { formatAmount, estimateWeight, batchWeight } from "./cooking";
 // Pure domain functions: no React, Telegram, localStorage or network.
 export function cook(
   state: AppState,
@@ -16,7 +17,21 @@ export function cook(
   catalog: Food[],
   id: string,
   now: string,
+  cookedWeightGrams?: number,
 ): AppState {
+  if (
+    !Number.isInteger(recipe.servings) ||
+    recipe.servings < 1 ||
+    recipe.servings > 50
+  )
+    throw new Error("Количество порций — от 1 до 50.");
+  if (
+    cookedWeightGrams !== undefined &&
+    (!Number.isFinite(cookedWeightGrams) ||
+      cookedWeightGrams <= 0 ||
+      cookedWeightGrams > 100_000)
+  )
+    throw new Error("Проверь вес готового блюда.");
   if (
     !ingredients.length ||
     ingredients.some((i) => !Number.isFinite(i.grams) || i.grams <= 0)
@@ -34,14 +49,16 @@ export function cook(
         `Недостаточно: ${catalog.find((f) => f.id === foodId)?.name ?? foodId}. Добавь продукт на полку или измени состав.`,
       );
   }
-  // Deduct earliest-expiring lots first. Unknown expiry goes last.
+  // Oldest added lots first; keep legacy ordering for old undated data.
   const pantry = state.pantry.map((p) => ({ ...p }));
   for (const [foodId, grams] of required) {
     let remaining = grams;
     const lots = pantry
       .filter((p) => p.foodId === foodId)
       .sort((a, b) =>
-        (a.expiresOn || "9999").localeCompare(b.expiresOn || "9999"),
+        (a.addedAt || a.expiresOn || "9999").localeCompare(
+          b.addedAt || b.expiresOn || "9999",
+        ),
       );
     for (const lot of lots) {
       const used = Math.min(lot.grams, remaining);
@@ -50,6 +67,8 @@ export function cook(
     }
   }
   const batch: Batch = {
+    estimatedWeightGrams: estimateWeight(recipe, ingredients),
+    ...(cookedWeightGrams === undefined ? {} : { cookedWeightGrams }),
     id,
     recipeName: recipe.name,
     cookedAt: now,
@@ -85,8 +104,11 @@ export function eat(
     date,
     meal,
     nutrients: scale(batch.nutrients, fraction),
-    amountLabel: `${Math.round(fraction * 100)}% блюда`,
-    approximate: false,
+    amountLabel: batchWeight(batch)
+      ? `${batch.cookedWeightGrams ? "" : "≈ "}${formatAmount(batchWeight(batch)! * fraction)} г · ${formatAmount(fraction * 100)}% блюда`
+      : `${formatAmount(fraction * batch.servings)} порц. · ${formatAmount(fraction * 100)}% блюда`,
+    approximate:
+      !batch.cookedWeightGrams && Boolean(batch.estimatedWeightGrams),
     batchId,
     fraction,
     source: "Готовая еда",

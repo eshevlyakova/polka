@@ -8,3 +8,5 @@
 - Овсянка: **dytmeri** — https://www.pexels.com/photo/delicious-banana-cinnamon-oatmeal-breakfast-bowl-28792769/ — Pexels License: https://www.pexels.com/license/
 
 Pexels-файлы получены с сервера изображений в размере 1200 px по ширине. Изображение Wikimedia сохранено без изменения; показ через CSS object-fit. Авторы и лицензии доступны в настройках приложения и карточках рецептов.
+
+Для демонстрационной вариации `omelet-cheese` в ленте повторно используется существующее фото омлета (`omelet`), как иллюстрация подачи. На странице самого рецепта фото нет.

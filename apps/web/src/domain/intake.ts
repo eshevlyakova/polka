@@ -46,7 +46,9 @@ export function recordIntake(
     const lots = state.pantry
       .filter((item) => item.foodId === intake.foodId && item.grams > 0)
       .sort((a, b) =>
-        (a.expiresOn || "9999").localeCompare(b.expiresOn || "9999"),
+        (a.addedAt || a.expiresOn || "9999").localeCompare(
+          b.addedAt || b.expiresOn || "9999",
+        ),
       );
     if (
       lots.reduce((total, item) => total + item.grams, 0) + 1e-6 <

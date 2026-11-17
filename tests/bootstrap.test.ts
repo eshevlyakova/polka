@@ -46,3 +46,23 @@ it("rebases fictional dates while preserving deletions and edited quantities", (
       .at(-1),
   ).toBe("2026-10-16");
 });
+it("adds multiple prepared examples once and preserves later deletions", () => {
+  const old = createDemoState(new Date("2026-10-10T12:00:00"));
+  old.batches = old.batches.filter((b) => b.id === "demo-cooked-chicken");
+  old.pantry[0].grams = 123;
+  repo.save(old);
+  const now = new Date("2026-10-16T12:00:00");
+  const upgraded = bootstrapPrototype(repo, localStorage, key, now);
+  expect(upgraded.batches).toHaveLength(3);
+  expect(upgraded.pantry[0].grams).toBe(123);
+  expect(
+    upgraded.batches
+      .filter((b) => b.id !== "demo-cooked-chicken")
+      .every((b) => b.cookedAt.startsWith("2026-10-16")),
+  ).toBe(true);
+  upgraded.batches = upgraded.batches.slice(0, 1);
+  repo.save(upgraded);
+  expect(bootstrapPrototype(repo, localStorage, key, now).batches).toHaveLength(
+    1,
+  );
+});

@@ -5,7 +5,7 @@ export function ProfilePearArt() {
   const id = useId().replace(/:/g, "");
   return (
     <svg
-      viewBox="0 0 240 160"
+      viewBox="0 0 215 160"
       role="img"
       aria-label="Груша подмигивает и держит звёздочку"
     >

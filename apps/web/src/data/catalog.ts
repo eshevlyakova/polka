@@ -1,33 +1,9 @@
-import type { Food, Recipe } from "../domain/model";
-// Illustrative generic values per 100 g. Users can add exact label values.
-export const foods: Food[] = [
-  ["egg", "Яйцо", "🥚", 157, 12.7, 11.5, 0.7],
-  ["tomato", "Помидоры", "🍅", 20, 1.1, 0.2, 3.7],
-  ["oil", "Масло растительное", "🫒", 899, 0, 99.9, 0],
-  ["chicken", "Куриная грудка, сырая", "🍗", 120, 22.5, 2.6, 0],
-  ["rice", "Рис, сухой", "🍚", 360, 7, 1, 79],
-  ["cottage", "Творог 5%", "🥣", 121, 17, 5, 1.8],
-  ["cucumber", "Огурцы", "🥒", 15, 0.8, 0.1, 2.8],
-  ["oats", "Овсяные хлопья", "🌾", 370, 13, 7, 62],
-  ["banana", "Банан", "🍌", 89, 1.1, 0.3, 23],
-  ["milk", "Молоко 2,5%", "🥛", 52, 2.8, 2.5, 4.7],
-  ["cheese", "Сыр", "🧀", 350, 25, 27, 0],
-  ["pasta", "Макароны, сухие", "🍝", 350, 12, 1.5, 72],
-  ["yogurt", "Йогурт натуральный", "🥛", 60, 4, 3, 5],
-].map(([id, name, emoji, kcal, protein, fat, carbs]) => ({
-  id: String(id),
-  name: String(name),
-  emoji: String(emoji),
-  per100: {
-    kcal: Number(kcal),
-    protein: Number(protein),
-    fat: Number(fat),
-    carbs: Number(carbs),
-  },
-}));
+import type { Recipe } from "../domain/model";
+export { basicFoods as foods } from "../../../../shared/basicFoods";
 export const recipes: Recipe[] = [
   {
     id: "omelet",
+    yieldFactors: { egg: 0.9, tomato: 0.9 },
     name: "Омлет с томатами",
     emoji: "🍳",
     minutes: 15,
@@ -46,6 +22,7 @@ export const recipes: Recipe[] = [
   },
   {
     id: "chicken-rice",
+    yieldFactors: { rice: 2.8, chicken: 0.75 },
     name: "Курица с рисом",
     emoji: "🍗",
     minutes: 30,
@@ -78,6 +55,7 @@ export const recipes: Recipe[] = [
   },
   {
     id: "porridge",
+    yieldFactors: { milk: 0.95 },
     name: "Овсянка с бананом",
     emoji: "🥣",
     minutes: 10,
@@ -91,6 +69,28 @@ export const recipes: Recipe[] = [
     steps: [
       "Свари хлопья на молоке по инструкции на упаковке.",
       "Добавь нарезанный банан.",
+    ],
+  },
+  {
+    id: "omelet-cheese",
+    yieldFactors: { egg: 0.9, milk: 0.9 },
+    name: "Омлет с сыром",
+    emoji: "",
+    minutes: 20,
+    servings: 2,
+    equipment: "Сковорода",
+    ingredients: [
+      { foodId: "egg", grams: 200 },
+      { foodId: "milk", grams: 50 },
+      { foodId: "cheese", grams: 40 },
+      { foodId: "oil", grams: 7 },
+    ],
+    steps: [
+      "Натри сыр. Разбей яйца в миску и смешай с молоком.",
+      "Разогрей сковороду на среднем огне и распредели масло по дну.",
+      "Влей яичную смесь и посыпь сыром.",
+      "Убавь нагрев, накрой крышкой и доведи яйца до полной готовности.",
+      "Раздели омлет на равные порции. Остаток остуди и убери в холодильник.",
     ],
   },
 ];

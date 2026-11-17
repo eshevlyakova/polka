@@ -7,10 +7,12 @@ import {
   fireEvent,
   cleanup,
   within,
+  waitFor,
 } from "@testing-library/react";
 import { emptyState } from "../apps/web/src/domain/model";
 import { App } from "../apps/web/src/App";
 beforeEach(() => {
+  window.history.replaceState(null, "", "/");
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -26,15 +28,24 @@ it("real input persists pantry and diary across remount", () => {
   fireEvent.click(
     screen.getByRole("button", { name: "Добавить продукт", exact: true }),
   );
+  fireEvent.click(screen.getByRole("button", { name: /Вручную/ }));
+  expect(screen.queryByLabelText("Срок годности")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /ЯйцоТиповой продукт/ }));
+  fireEvent.click(screen.getByRole("combobox", { name: "Единица количества" }));
+  fireEvent.click(screen.getByRole("option", { name: "г", exact: true }));
   fireEvent.change(screen.getByLabelText("Количество, г"), {
     target: { value: "400" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Сохранить продукт" }));
-  expect(screen.getByText("400 г · срок не указан")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Сегодня", exact: true }));
+  expect(screen.getByText("400 г")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
   );
+  if (screen.queryByRole("button", { name: "Продукт с полки", exact: true }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Продукт с полки", exact: true }),
+    );
   fireEvent.change(screen.getByLabelText("Количество, г"), {
     target: { value: "100" },
   });
@@ -48,7 +59,7 @@ it("real input persists pantry and diary across remount", () => {
   expect(screen.queryByText("Привет, это Полка")).toBeNull();
 });
 
-it("cooking and portion entry are separate user actions", () => {
+it("cooking and portion entry are separate user actions", async () => {
   const saved = {
     version: 1,
     pantry: [
@@ -68,15 +79,19 @@ it("cooking and portion entry are separate user actions", () => {
   };
   localStorage.setItem("polka:v1:browser", JSON.stringify(saved));
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "Рецепты", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Главная", exact: true }));
   fireEvent.click(screen.getByRole("button", { name: /Омлет с томатами/ }));
+  while (screen.queryByRole("button", { name: "Дальше" }))
+    fireEvent.click(screen.getByRole("button", { name: "Дальше" }));
   fireEvent.click(
     screen.getByRole("button", { name: "Приготовил — списать продукты" }),
   );
   let data = JSON.parse(localStorage.getItem("polka:v1:browser")!);
   expect(data.diary).toHaveLength(0);
   expect(data.pantry[0].grams).toBe(200);
-  fireEvent.click(screen.getByRole("button", { name: "Записать порцию" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Записать порцию" }),
+  );
   fireEvent.change(screen.getByLabelText("Количество порций"), {
     target: { value: "0.5" },
   });
@@ -111,23 +126,37 @@ it("first launch has a demo account and reload preserves edits", () => {
 
 it("bottom navigation and back preserve screen and close form", () => {
   render(<App />);
+  const navigation = within(
+    screen.getByRole("navigation", { name: "Основная навигация" }),
+  );
+  expect(
+    navigation.getAllByRole("button").map((button) => button.textContent),
+  ).toEqual(["Главная", "Полка", "Дневник", "Профиль"]);
+  expect(
+    screen.getByRole("heading", { name: "Что хочется сегодня?" }),
+  ).toBeTruthy();
+  expect(screen.queryByText("Моя цель")).toBeNull();
+  expect(screen.queryByText("Съедено сегодня")).toBeNull();
+  expect(screen.queryByText(/скоропорт/i)).toBeNull();
+  expect(screen.queryByRole("combobox")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
-  expect(screen.getByRole("heading", { name: "Моя полка" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Запасы" })).toBeTruthy();
   fireEvent.click(
     screen.getByRole("button", { name: "Добавить продукт", exact: true }),
   );
+  fireEvent.click(screen.getByRole("button", { name: /Вручную/ }));
   expect(screen.getByRole("dialog")).toBeTruthy();
   fireEvent.click(
     screen.getAllByRole("button", { name: "Назад", exact: true }).at(-1)!,
   );
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(screen.getByRole("heading", { name: "Моя полка" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Запасы" })).toBeTruthy();
   expect(
     screen.queryByRole("button", { name: "Назад", exact: true }),
   ).toBeNull();
 });
 
-it("profile contains preferences and achievements without another page", () => {
+it("profile combines identity and achievements without preferences or separate statistics tiles", () => {
   render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   fireEvent.click(screen.getByRole("button", { name: "Профиль", exact: true }));
@@ -135,8 +164,11 @@ it("profile contains preferences and achievements without another page", () => {
     screen.getByRole("heading", { name: "Мой профиль", exact: true }),
   ).toBeTruthy();
   expect(screen.getByRole("heading", { name: "Твоя коллекция" })).toBeTruthy();
-  expect(screen.getByRole("heading", { name: "Под себя" })).toBeTruthy();
+  expect(document.querySelector(".profile-stats")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Под себя" })).toBeNull();
   expect(screen.getByRole("heading", { name: "О тебе" })).toBeTruthy();
+  expect(screen.queryByText("Текущий вес")).toBeNull();
+  expect(screen.queryByText("Желаемый вес")).toBeNull();
   expect(screen.queryByText("БЛИЖАЙШЕЕ ДОСТИЖЕНИЕ")).toBeNull();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(screen.queryByRole("button", { name: "Открыть меню" })).toBeNull();
@@ -156,25 +188,34 @@ it("old empty accounts open with visible mock pantry and diary", () => {
   ).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
   expect(screen.getByRole("button", { name: "Удалить Яйцо" })).toBeTruthy();
+  expect(
+    screen.queryByRole("button", { name: "Создать продукт по этикетке" }),
+  ).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   expect(
     screen.getByRole("heading", { name: "Курица с рисом", exact: true }),
   ).toBeTruthy();
+  expect(
+    screen.queryByRole("button", { name: /Твоя коллекция достижений/ }),
+  ).toBeNull();
 });
 
-it("custom picker filters recipes and Escape leaves the food form open", () => {
+it("time buttons filter recipes and Escape leaves the food form open", () => {
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "Рецепты", exact: true }));
-  const picker = screen.getByRole("combobox");
-  fireEvent.click(picker);
-  fireEvent.click(screen.getByRole("option", { name: "До 10 минут" }));
+  fireEvent.click(screen.getByRole("button", { name: "Главная", exact: true }));
+  fireEvent.change(screen.getByLabelText("Время на готовку, мин"), {
+    target: { value: "10" },
+  });
   expect(
     JSON.parse(localStorage.getItem("polka:v1:browser")!).settings.maxMinutes,
   ).toBe(10);
   expect(screen.queryByRole("listbox")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Сегодня", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Продукт с полки", exact: true }),
   );
   const meal = screen.getByRole("combobox", { name: "Приём пищи" });
   fireEvent.click(meal);
@@ -193,7 +234,7 @@ it("custom picker filters recipes and Escape leaves the food form open", () => {
   ).toBe("Перекус");
 });
 
-it("adds multiple dishes to the same meal on a previous week", () => {
+it("adds multiple dishes to the same meal on a previous week", async () => {
   render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   fireEvent.click(screen.getByRole("button", { name: "Предыдущая неделя" }));
@@ -203,10 +244,14 @@ it("adds multiple dishes to the same meal on a previous week", () => {
   const initial = group.querySelectorAll("article").length;
   for (let index = 0; index < 2; index++) {
     fireEvent.click(within(group).getByRole("button", { name: /Добавить/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Продукт с полки", exact: true }),
+    );
     fireEvent.change(screen.getByLabelText("Количество, г"), {
       target: { value: "100" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   }
   expect(group.querySelectorAll("article").length).toBe(initial + 2);
   fireEvent.click(screen.getByRole("button", { name: "Вернуться к сегодня" }));
@@ -225,18 +270,20 @@ it("pantry recipe action filters by product and can return to pantry", () => {
   expect(screen.queryByRole("button", { name: /Курица с рисом/ })).toBeNull();
   expect(screen.queryByRole("heading", { name: "Готовые остатки" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "К полке" }));
-  expect(screen.getByRole("heading", { name: "Моя полка" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Запасы" })).toBeTruthy();
 });
 
 it("prepared dishes live on the pantry instead of recipes", () => {
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "Рецепты", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Главная", exact: true }));
   expect(screen.queryByRole("heading", { name: "Готовые остатки" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Записать порцию" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
   fireEvent.click(screen.getByRole("button", { name: /Готовая еда/ }));
   expect(screen.getByRole("heading", { name: "Курица с рисом" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Записать порцию" })).toBeTruthy();
+  expect(
+    screen.getAllByRole("button", { name: "Записать порцию" }),
+  ).toHaveLength(3);
   fireEvent.click(screen.getByRole("button", { name: /Продукты/ }));
   expect(screen.queryByRole("button", { name: "Записать порцию" })).toBeNull();
   expect(
@@ -244,20 +291,25 @@ it("prepared dishes live on the pantry instead of recipes", () => {
   ).toBeTruthy();
 });
 
-it("the intake form switches between shelf and other food and preserves selected meal date", () => {
+it("the intake form switches between shelf and other food and preserves selected meal date", async () => {
   const state = emptyState();
   state.settings.onboarded = true;
   state.pantry = [{ id: "egg-lot", foodId: "egg", grams: 300, expiresOn: "" }];
   localStorage.setItem("polka:v1:browser", JSON.stringify(state));
   render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
   );
   expect(screen.getByRole("dialog", { name: "Что ты съел?" })).toBeTruthy();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Продукт с полки", exact: true }),
+  );
   fireEvent.change(screen.getByLabelText("Количество, г"), {
     target: { value: "100" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   let saved = JSON.parse(localStorage.getItem("polka:v1:browser")!);
   expect(saved.pantry[0].grams).toBe(200);
   expect(saved.diary[0].source).toBe("С полки");
@@ -270,15 +322,57 @@ it("the intake form switches between shelf and other food and preserves selected
       exact: true,
     }),
   );
+  if (screen.queryByRole("button", { name: "Продукт с полки", exact: true }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Продукт с полки", exact: true }),
+    );
   fireEvent.change(screen.getByLabelText("Количество, г"), {
     target: { value: "150" },
   });
   fireEvent.change(screen.getByLabelText("Когда съел"), {
-    target: { value: "2026-10-10" },
+    target: { value: "10.10.2026" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   saved = JSON.parse(localStorage.getItem("polka:v1:browser")!);
   expect(saved.pantry[0].grams).toBe(200);
   expect(saved.diary[0].date).toBe("2026-10-10");
   expect(saved.diary[0].source).toBe("Другая еда");
+});
+
+it("new catalog products are reachable through the single pantry add action", async () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
+  const before = JSON.parse(localStorage.getItem("polka:v1:browser")!);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Добавить продукт", exact: true }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: /Вручную/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Не нашёл продукт/ }));
+  fireEvent.change(screen.getByLabelText("Название"), {
+    target: { value: "Хумус для проверки" },
+  });
+  for (const [label, value] of [
+    ["Ккал", "180"],
+    ["Белки, г", "6"],
+    ["Жиры, г", "10"],
+    ["Углеводы, г", "16"],
+  ])
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  fireEvent.click(screen.getByRole("button", { name: "Сохранить в каталог" }));
+  await waitFor(() =>
+    expect(document.querySelector(".selected-product")?.textContent).toContain(
+      "Хумус для проверки",
+    ),
+  );
+  expect(
+    JSON.parse(localStorage.getItem("polka:v1:browser")!).pantry.length,
+  ).toBe(before.pantry.length);
+  fireEvent.change(screen.getByLabelText("Количество, г"), {
+    target: { value: "200" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Сохранить продукт" }));
+  const saved = JSON.parse(localStorage.getItem("polka:v1:browser")!);
+  expect(saved.pantry.length).toBe(before.pantry.length + 1);
+  expect(saved.pantry.at(-1).foodId).toBe(saved.customFoods.at(-1).id);
 });

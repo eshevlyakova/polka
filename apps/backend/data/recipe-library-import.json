@@ -1,0 +1,12 @@
+{
+  "importedAt": "2026-11-07T11:39:32.991643+00:00",
+  "sourceUrl": "https://raw.githubusercontent.com/farcrak/unitools-recipes/main/unitools-recipes-v1.json",
+  "version": "2.0.0",
+  "sourceSha256": "41fdc0572b7272ca557d2df22a0fac1cc1f18146e97ebd2c8258c395daf87d8a",
+  "recipes": 501,
+  "language": "ru",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "attribution": "UniTools — theunitools.com",
+  "changes": "Selected Russian fields; renamed fields and calories to kcal; no photos imported. Original recipe quantities and nutrition preserved."
+}
