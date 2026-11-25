@@ -108,3 +108,27 @@ it("releases a permission result received after the dialog has closed", async ()
   expect(stopped).toHaveBeenCalledTimes(1);
   expect(onAudio).not.toHaveBeenCalled();
 });
+
+it("reuses a muted stream between replies and releases it when the conversation ends", async () => {
+  const track = { enabled: true, stop: vi.fn() };
+  const getUserMedia = vi
+    .fn()
+    .mockResolvedValue({ active: true, getTracks: () => [track] });
+  Object.defineProperty(navigator, "mediaDevices", {
+    configurable: true,
+    value: { getUserMedia },
+  });
+  vi.stubGlobal("MediaRecorder", Recorder);
+  const { result } = renderHook(() =>
+    useProductMicrophone(vi.fn(), vi.fn(), true),
+  );
+  await act(async () => result.current.start());
+  act(() => result.current.stop(false));
+  expect(track.enabled).toBe(false);
+  expect(track.stop).not.toHaveBeenCalled();
+  await act(async () => result.current.start());
+  expect(track.enabled).toBe(true);
+  expect(getUserMedia).toHaveBeenCalledTimes(1);
+  act(() => result.current.stop(true));
+  expect(track.stop).toHaveBeenCalledTimes(1);
+});

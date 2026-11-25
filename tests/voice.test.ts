@@ -388,3 +388,52 @@ it.each([
     expect(voiceDrafts(result.items, basicFoods)[0].grams).toBe(grams);
   },
 );
+
+it("preserves a spoken milk brand and asks for the missing fat separately", async () => {
+  const fetcher = vi.fn(async () =>
+    Response.json({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              items: [
+                { name: "Молоко Чужая марка 3,2%", quantity: 1, unit: "l" },
+              ],
+              question: "",
+            }),
+          },
+        },
+      ],
+    }),
+  );
+  const value = await interpretProducts(
+    {
+      turns: [
+        { role: "user", content: "Литр молока" },
+        { role: "assistant", content: "Какой бренд и жирность молока?" },
+        { role: "user", content: "Домик в деревне." },
+      ],
+    },
+    connection,
+    undefined,
+    fetcher,
+  );
+  expect(value.items[0].name).toBe("Молоко Домик в деревне");
+  expect(value.question).toBe("А какая жирность у молока?");
+  expect(voiceDrafts(value.items, basicFoods)[0].foodId).toBe("");
+  const next = await interpretProducts(
+    {
+      turns: [
+        { role: "user", content: "Литр молока" },
+        { role: "assistant", content: "Какой бренд и жирность молока?" },
+        { role: "user", content: "Домик в деревне." },
+        { role: "assistant", content: value.question },
+        { role: "user", content: "2,5 процента." },
+      ],
+    },
+    connection,
+    undefined,
+    fetcher,
+  );
+  expect(next.items[0].name).toBe("Молоко Домик в деревне 2,5%");
+});

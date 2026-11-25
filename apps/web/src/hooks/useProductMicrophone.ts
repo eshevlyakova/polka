@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 export function useProductMicrophone(
   onAudio: (blob: Blob, finished: boolean) => void,
   onError: (message: string) => void,
+  keepBetweenTurns = false,
 ) {
   const [recording, setRecording] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -19,23 +20,41 @@ export function useProductMicrophone(
   const callbacks = useRef({ onAudio, onError });
   callbacks.current = { onAudio, onError };
 
-  function release() {
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
+  const keep = useRef(keepBetweenTurns);
+  keep.current = keepBetweenTurns;
+  const generation = useRef(0);
+  function releaseInput() {
     stream.current?.getTracks().forEach((track) => track.stop());
     stream.current = null;
+  }
+  useEffect(() => {
+    if (!keepBetweenTurns && recorder.current?.state !== "recording")
+      releaseInput();
+  }, [keepBetweenTurns]);
+  function release(pause = false) {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+    if (pause && keep.current && !document.hidden && !disposed.current)
+      stream.current?.getTracks().forEach((track) => {
+        track.enabled = false;
+      });
+    else releaseInput();
     void context.current?.close().catch(() => {});
     context.current = null;
   }
   function stop(finished = true) {
     finish.current = finished;
     if (recorder.current?.state === "recording") recorder.current.stop();
-    release();
+    release(!finished);
   }
   useEffect(() => {
     disposed.current = false;
     const visibility = () => {
-      if (document.hidden) stop(false);
+      if (document.hidden) {
+        generation.current++;
+        stop(false);
+        releaseInput();
+      }
     };
     document.addEventListener("visibilitychange", visibility);
     return () => {
@@ -60,14 +79,24 @@ export function useProductMicrophone(
     starting.current = true;
     setRequesting(true);
     try {
-      const media = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
-        video: false,
-      });
-      if (disposed.current || document.hidden) {
+      const version = generation.current;
+      const media = stream.current?.active
+        ? stream.current
+        : await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+            video: false,
+          });
+      if (
+        disposed.current ||
+        document.hidden ||
+        version !== generation.current
+      ) {
         media.getTracks().forEach((track) => track.stop());
         return;
       }
+      media.getTracks().forEach((track) => {
+        track.enabled = true;
+      });
       stream.current = media;
       const mime = [
         "audio/webm;codecs=opus",
@@ -99,7 +128,7 @@ export function useProductMicrophone(
         );
       };
       next.onstop = () => {
-        release();
+        release(!finish.current && !skip.current);
         if (disposed.current || skip.current) return;
         setRecording(false);
         const blob = new Blob(chunks, {

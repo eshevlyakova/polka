@@ -59,7 +59,9 @@ function VoicePantryFlow({ app }: { app: AppController }) {
             <p aria-live="polite">
               {result?.question ||
                 (rows?.length
-                  ? "Список можно править прямо здесь."
+                  ? active
+                    ? "Что ещё добавим? Когда закончишь, скажи «всё»."
+                    : "Список можно править прямо здесь."
                   : "Назови продукты и сделай паузу. Если понадобится уточнение, я спрошу.")}
             </p>
           </div>
@@ -75,8 +77,7 @@ function VoicePantryFlow({ app }: { app: AppController }) {
             }
             onClick={() => {
               flow.setError("");
-              if (microphone.recording) microphone.stop(false);
-              else if (active) flow.finishVoice();
+              if (active) flow.finishVoice();
               else flow.startVoice();
             }}
           >
@@ -87,15 +88,13 @@ function VoicePantryFlow({ app }: { app: AppController }) {
             ) : (
               <Mic size={20} />
             )}
-            {microphone.recording
-              ? "Закончить фразу"
-              : active
-                ? "Завершить разговор"
-                : microphone.requesting
-                  ? "Подключаем микрофон…"
-                  : flow.turns.length
-                    ? "Продолжить диктовку"
-                    : "Начать диктовку"}
+            {active
+              ? "Завершить разговор"
+              : microphone.requesting
+                ? "Подключаем микрофон…"
+                : flow.turns.length
+                  ? "Продолжить диктовку"
+                  : "Начать диктовку"}
           </button>
           {!!result?.question &&
             !busy &&

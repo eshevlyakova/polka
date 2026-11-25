@@ -12,7 +12,10 @@ export async function speakQuestion(
   if (typeof text !== "string" || !text.trim() || text.length > 400)
     throw new AiError("Не удалось прочитать уточнение.");
   if (typeof connection === "string")
-    throw new AiError("Не удалось озвучить вопрос. Его можно прочитать на экране.", 503);
+    throw new AiError(
+      "Не удалось озвучить вопрос. Его можно прочитать на экране.",
+      503,
+    );
   try {
     const response = await fetcher("https://api.timeweb.ai/v1/audio/speech", {
       method: "POST",
@@ -22,11 +25,11 @@ export async function speakQuestion(
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini-tts",
-        voice: "sage",
+        voice: "marin",
         input: text.trim(),
         response_format: "mp3",
         instructions:
-          "Говори по-русски, тепло и естественно, как помощник на кухне. Без вступления, прочитай только вопрос. Мягкий спокойный голос, живая разговорная интонация, короткие паузы. Числа и единицы произноси словами.",
+          "Говори по-русски, тепло и естественно, как помощник на кухне. Без вступления, прочитай только вопрос. Живая разговорная русская речь, в темпе обычной беседы между друзьями. Связывай слова в одну фразу, естественно редуцируй безударные гласные. Избегай дикторской подачи и проговаривания по слогам. Числа и единицы произноси словами.",
       }),
       signal: signal
         ? AbortSignal.any([signal, AbortSignal.timeout(30000)])

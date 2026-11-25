@@ -87,15 +87,13 @@ export function useVoicePantryFlow(app: AppController) {
     if (response.question)
       setTurns([...next, { role: "assistant", content: response.question }]);
     else setTurns(next);
-    if (
-      response.question &&
-      voiceActive &&
-      !finished &&
-      !finishRequested.current
-    ) {
+    const reply =
+      response.question ||
+      (merged.rows.length ? "Что ещё добавим?" : "Какие продукты у тебя есть?");
+    if (voiceActive && !finished && !finishRequested.current) {
       setBusy("Полка уточняет…");
       try {
-        await speaker.speak(response.question, controller.signal);
+        await speaker.speak(reply, controller.signal);
       } catch (err) {
         if (!controller.signal.aborted && !disposed.current) {
           setVoiceActive(false);
@@ -103,11 +101,7 @@ export function useVoicePantryFlow(app: AppController) {
         }
       }
     }
-    if (
-      finished ||
-      finishRequested.current ||
-      (!response.question && merged.rows.length > 0)
-    ) {
+    if (finished || finishRequested.current) {
       setVoiceActive(false);
       finishRequested.current = true;
     }
@@ -163,6 +157,7 @@ export function useVoicePantryFlow(app: AppController) {
       setVoiceActive(false);
       setError(message);
     },
+    voiceActive,
   );
   useEffect(() => {
     if (

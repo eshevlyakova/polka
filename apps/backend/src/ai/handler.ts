@@ -10,6 +10,7 @@ import {
 } from "./config";
 
 export interface AiEnv extends AiProviderEnv {
+  APP_ORIGIN?: string;
   DATABASE_URL?: string;
   API_GLM?: string;
   ALLOWED_ORIGIN?: string;

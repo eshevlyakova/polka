@@ -72,3 +72,14 @@ node apps/backend/dist/apps/backend/src/db/migrate.js
 Ни одна из этих моделей ещё не подключена. Цены конкретных моделей нужно брать из их карточек в AI Gateway, отдельно для входа/выхода/аудио/изображений; цены прямого API производителя нельзя считать ценами Timeweb. Месячный расход рассчитывается по числу сценариев, длине контекста, изображениям, длительности аудио и повторам. Пока реальные запросы не замерены, фиксированная сумма в месяц была бы предположением.
 
 Источники: [Dockerfile в Apps](https://timeweb.cloud/docs/apps/deploying-with-dockerfile), [домен и SSL](https://timeweb.cloud/docs/apps/domain), [AI Gateway и каталог](https://timeweb.cloud/services/ai-gateway), [аудио Timeweb](https://timeweb.cloud/docs/ai-gateway/audio-api), [актуальная транскрибация OpenAI](https://developers.openai.com/api/docs/guides/speech-to-text).
+
+### Приветствие Telegram на Timeweb
+
+После деплоя открыть консоль приложения и выполнить по очереди:
+
+```sh
+node /app/apps/backend/dist/apps/backend/src/db/migrate.js
+node /app/apps/backend/dist/apps/backend/src/telegram/connect.js
+```
+
+Вторая команда привязывает бота к `APP_ORIGIN/api/telegram/webhook` вместо прежнего обработчика. Использует серверный `BOT_TOKEN` и проверяет доступность обложки. Запускается один раз, а также после замены токена или домена. Проверка в личном чате: отправить `/start`. Должна появиться фотография с кнопкой «Открыть Полку», затем исходная команда исчезнет.

@@ -132,6 +132,8 @@ it("speaks clarifications before resuming the microphone and keeps an editable l
   await act(async () => finishSpeech());
   await waitFor(() => expect(harness.start).toHaveBeenCalledTimes(2));
   await say("По 200 граммов");
+  expect(screen.queryByLabelText("Масса, г")).toBeNull();
+  await say("Всё");
   await waitFor(() =>
     expect((screen.getByLabelText("Масса, г") as HTMLInputElement).value).toBe(
       "400",
@@ -160,12 +162,14 @@ it("preserves edits across subsequent AI responses and retains the list after a 
   open();
   fireEvent.click(screen.getByRole("button", { name: "Начать диктовку" }));
   await say("Творог 400 граммов");
+  await say("Всё");
   await screen.findByLabelText("Масса, г");
   fireEvent.change(screen.getByLabelText("Масса, г"), {
     target: { value: "300" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Продолжить диктовку" }));
   await say("И больше ничего");
+  await say("Всё");
   expect((screen.getByLabelText("Масса, г") as HTMLInputElement).value).toBe(
     "300",
   );
@@ -194,7 +198,7 @@ it("keeps the last failed phrase retryable and blocks saving an incomplete inter
   open();
   fireEvent.click(screen.getByRole("button", { name: "Начать диктовку" }));
   await say("Творог 400 граммов");
-  await screen.findByLabelText("Масса, г");
+  expect(screen.queryByLabelText("Масса, г")).toBeNull();
   await say("И ещё помидоры");
   await screen.findByRole("button", { name: "Повторить разбор списка" });
   expect(

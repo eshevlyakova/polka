@@ -8,6 +8,17 @@ import { foodMeasures } from "./measures";
 export function voiceDrafts(items: ReceiptItem[], catalog: Food[]) {
   return receiptDrafts(items, catalog).map((row) => {
     const item = row.recognized;
+    // A catalogue suggestion may include a different brand or fat percentage.
+    // Leave that choice to the user during review.
+    const selected = row.options.find((food) => food.id === row.foodId);
+    if (
+      /молок[оа]/iu.test(item.name) &&
+      selected &&
+      selected.name.toLocaleLowerCase("ru") !==
+        item.name.toLocaleLowerCase("ru") &&
+      !/\d\s*%/u.test(item.name)
+    )
+      row.foodId = "";
     const volume = voiceVolume(item);
     if (!row.grams && volume)
       return {

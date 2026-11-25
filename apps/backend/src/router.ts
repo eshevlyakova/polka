@@ -1,3 +1,4 @@
+import { telegramWebhook, webhookPath } from "./telegram/webhook";
 import { authorizedAiTask, handleAiRequest, type AiEnv } from "./ai/handler";
 import { recognizeReceipt } from "./ai/receipt";
 import { interpretProducts, transcribeProducts } from "./ai/voice";
@@ -26,6 +27,7 @@ export async function handleRequest(
   local = false,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === webhookPath) return telegramWebhook(request, env);
   if (url.pathname === "/api/ai/transcribe")
     return authorizedAiTask(
       request,

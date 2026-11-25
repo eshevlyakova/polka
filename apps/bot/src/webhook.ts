@@ -1,3 +1,4 @@
+import { welcomeUser } from "../../../shared/telegramWelcome";
 import type { Env } from "./env";
 import { json, limitedJson } from "./http";
 import { sendMessage } from "./telegram";
@@ -11,6 +12,7 @@ export async function handleUpdate(request: Request, env: Env) {
   const update = (await limitedJson(request)) as {
     update_id: number;
     message?: {
+      message_id: number;
       text?: string;
       chat: { id: number; type: string };
       from?: { id: number };
@@ -35,10 +37,10 @@ export async function handleUpdate(request: Request, env: Env) {
         )
           .bind(message.from.id, message.chat.id)
           .run();
-        await sendMessage(
+        await welcomeUser(
           env.BOT_TOKEN,
           message.chat.id,
-          "Привет! Я Полка. Что есть у тебя дома?\n\nНажми «Открыть Полку» и назови продукты голосом, добавь их по чеку или вручную. Я помогу выбрать, что приготовить.",
+          message.message_id,
           env.WEB_APP_URL,
         );
       } else if (command === "/stop") {

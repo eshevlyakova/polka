@@ -34,19 +34,19 @@ export function quantityQuestion(items: ReceiptLine[]): string {
     );
     if (item.quantity === null || item.unit === null)
       return pieces
-        ? `${name}: сколько штук у тебя есть? Можно указать массу в граммах.`
-        : `${name}: сколько граммов у тебя есть? Можно назвать количество упаковок и массу одной.`;
+        ? `${name}: сколько штук у тебя есть?`
+        : `${name}: сколько у тебя по весу?`;
     if (receiptGrams(item) !== null || voiceVolume(item)) continue;
     if (item.unit === "pcs" && item.packageSize === null && pieces) continue;
     if (item.unit === "pcs")
-      return `${name}: сколько граммов в одной упаковке? У тебя их ${item.quantity.toLocaleString("ru")}.`;
+      return `${name}: сколько граммов в одной упаковке?`;
     // Volumes need a known household conversion to avoid silently treating ml as g.
     if (
       ["ml", "l"].includes(item.unit) &&
       foodMeasures({ id: "", name: item.name }).some((m) => m.id === "ml")
     )
       continue;
-    return `${name}: какая общая масса в граммах? Пока указан только объём.`;
+    return `${name}: сколько это примерно в граммах?`;
   }
   return "";
 }

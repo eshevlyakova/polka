@@ -1,4 +1,8 @@
-import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import {
+  webhookPath,
+  webhookSecret,
+} from "../apps/backend/src/telegram/webhook";
+import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { createHmac, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { Pool } from "pg";
@@ -57,6 +61,41 @@ describe.skipIf(!allowed)("PostgreSQL account integration", () => {
     DATABASE_URL: connection,
     BOT_TOKEN: botToken,
     ALLOWED_ORIGIN: "https://polka.test",
+  });
+  it("retries a failed Telegram welcome and sends concurrent duplicate updates only once", async () => {
+    const fetcher = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockImplementation(async () => Response.json({ ok: true }));
+    const start = () =>
+      handleRequest(
+        new Request(new URL(webhookPath, "https://polka.test"), {
+          method: "POST",
+          headers: {
+            "X-Telegram-Bot-Api-Secret-Token": webhookSecret(botToken),
+          },
+          body: JSON.stringify({
+            update_id: 10,
+            message: {
+              message_id: 123,
+              chat: { id: 42, type: "private" },
+              text: "/start entry",
+            },
+          }),
+        }),
+        { ...env(), APP_ORIGIN: "https://polka.test" },
+      );
+    try {
+      expect((await start()).status).toBe(503);
+      expect(
+        (await Promise.all([start(), start()])).map((r) => r.status),
+      ).toEqual([204, 204]);
+      expect(
+        fetcher.mock.calls.map(([url]) => String(url).split("/").pop()),
+      ).toEqual(["sendPhoto", "sendPhoto", "deleteMessage"]);
+    } finally {
+      fetcher.mockRestore();
+    }
   });
   async function call(
     path: string,
