@@ -16,7 +16,7 @@ export async function sendMessage(
           ? {
               reply_markup: {
                 inline_keyboard: [
-                  [{ text: "Открыть Полку", web_app: { url } }],
+                  [{ text: "Открыть Полку", style: "success", web_app: { url } }],
                 ],
               },
             }

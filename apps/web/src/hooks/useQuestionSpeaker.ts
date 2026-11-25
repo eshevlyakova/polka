@@ -6,6 +6,7 @@ export function useQuestionSpeaker() {
   const context = useRef<AudioContext | null>(null);
   const source = useRef<AudioBufferSourceNode | null>(null);
   const generation = useRef(0);
+  const lastQuestion = useRef<{ text: string; bytes: Uint8Array } | null>(null);
   function unlock() {
     if (typeof AudioContext === "undefined") return;
     if (!context.current || context.current.state === "closed")
@@ -30,8 +31,12 @@ export function useQuestionSpeaker() {
   }, []);
   async function speak(text: string, signal: AbortSignal) {
     const version = generation.current;
-    const bytes = await fetchQuestionAudio(text, signal);
+    const bytes =
+      lastQuestion.current?.text === text
+        ? lastQuestion.current.bytes
+        : await fetchQuestionAudio(text, signal);
     if (signal.aborted || version !== generation.current) return;
+    lastQuestion.current = { text, bytes };
     const ctx = context.current;
     if (!ctx || ctx.state !== "running")
       throw new Error("Нажми «Озвучить вопрос», чтобы включить звук.");

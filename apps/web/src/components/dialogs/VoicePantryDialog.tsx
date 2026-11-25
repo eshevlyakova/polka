@@ -19,6 +19,7 @@ function VoicePantryFlow({ app }: { app: AppController }) {
   const flow = useVoicePantryFlow(app);
   const { result, rows, busy, saving, microphone, voiceActive, error } = flow;
   const active = voiceActive || microphone.recording || microphone.requesting;
+  const review = !active && !busy && !!rows?.length;
   return (
     <Modal
       title={flow.firstFill ? "Разберём твой холодильник" : "Разберём покупки"}
@@ -52,22 +53,17 @@ function VoicePantryFlow({ app }: { app: AppController }) {
                   : result?.question
                     ? "Уточним одну деталь"
                     : rows?.length
-                      ? "Что ещё добавим?"
+                      ? "Проверь список"
                       : "Расскажи, что есть дома")}
             </h3>
             <p aria-live="polite">
               {result?.question ||
                 (rows?.length
                   ? "Список можно править прямо здесь."
-                  : "Называй продукты и количество. Если чего-то не хватит, Полка спросит голосом.")}
+                  : "Назови продукты и сделай паузу. Если понадобится уточнение, я спрошу.")}
             </p>
           </div>
         </div>
-        {!!flow.turns.length && (
-          <p className="voice-last-phrase">
-            {flow.turns.filter((t) => t.role === "user").at(-1)?.content}
-          </p>
-        )}
         <div className="voice-live-controls">
           <button
             className="primary voice-record"
@@ -79,7 +75,8 @@ function VoicePantryFlow({ app }: { app: AppController }) {
             }
             onClick={() => {
               flow.setError("");
-              if (active) flow.finishVoice();
+              if (microphone.recording) microphone.stop(false);
+              else if (active) flow.finishVoice();
               else flow.startVoice();
             }}
           >
@@ -90,13 +87,15 @@ function VoicePantryFlow({ app }: { app: AppController }) {
             ) : (
               <Mic size={20} />
             )}
-            {active
-              ? "Завершить диктовку"
-              : microphone.requesting
-                ? "Подключаем микрофон…"
-                : flow.turns.length
-                  ? "Продолжить диктовку"
-                  : "Начать диктовку"}
+            {microphone.recording
+              ? "Закончить фразу"
+              : active
+                ? "Завершить разговор"
+                : microphone.requesting
+                  ? "Подключаем микрофон…"
+                  : flow.turns.length
+                    ? "Продолжить диктовку"
+                    : "Начать диктовку"}
           </button>
           {!!result?.question &&
             !busy &&
@@ -112,7 +111,7 @@ function VoicePantryFlow({ app }: { app: AppController }) {
               </button>
             )}
         </div>
-        {!!rows?.length && (
+        {review && (
           <section
             className="voice-editable-list"
             aria-label="Продукты для добавления"
@@ -176,7 +175,7 @@ function VoicePantryFlow({ app }: { app: AppController }) {
             Ввести продукты вручную
           </button>
         )}
-        {!!rows?.length && (
+        {review && (
           <button
             className="primary voice-confirm"
             disabled={

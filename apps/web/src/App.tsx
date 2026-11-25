@@ -15,7 +15,7 @@ import { OnboardingDialog } from "./components/dialogs/OnboardingDialog";
 export function App() {
   const app = useAppController();
   const { error, setError, message, setMessage, tab, setTab } = app;
-  const welcome = !app.state.settings.onboarded;
+  const welcome = !app.state.settings.onboarded || (app.session?.mode === "account" && app.state.settings.profileConfirmed !== true);
   return (
     <div
       className="app"

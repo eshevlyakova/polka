@@ -145,7 +145,7 @@ export function useProductMicrophone(
             lastSpeech = now;
           }
         }
-        if ((heardSpeech && now - lastSpeech > 3000) || now - started > 60000)
+        if ((heardSpeech && now - lastSpeech > 1050) || now - started > 60000)
           stop(false);
       }, 200);
     } catch (error) {

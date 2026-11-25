@@ -80,6 +80,7 @@ export function parseState(value: unknown): AppState {
     ) ||
     !finite(s.settings.calorieGoal) ||
     typeof s.settings.onboarded !== "boolean" ||
+    (s.settings.profileConfirmed !== undefined && typeof s.settings.profileConfirmed !== "boolean") ||
     typeof s.settings.exclusions !== "string" ||
     !finite(s.settings.maxMinutes)
   )

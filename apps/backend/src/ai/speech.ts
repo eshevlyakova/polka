@@ -22,11 +22,11 @@ export async function speakQuestion(
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini-tts",
-        voice: "coral",
+        voice: "sage",
         input: text.trim(),
         response_format: "mp3",
         instructions:
-          "Говори по-русски, тепло и естественно, как помощник на кухне. Без вступления, прочитай только вопрос. Умеренно быстрый темп.",
+          "Говори по-русски, тепло и естественно, как помощник на кухне. Без вступления, прочитай только вопрос. Мягкий спокойный голос, живая разговорная интонация, короткие паузы. Числа и единицы произноси словами.",
       }),
       signal: signal
         ? AbortSignal.any([signal, AbortSignal.timeout(30000)])

@@ -219,22 +219,20 @@ it("asks for every missing quantity in sequence even if the model returns no que
 });
 
 it("retains brand clarifications but does not repeat an optional question after 'не знаю'", async () => {
-  const fetcher = vi
-    .fn()
-    .mockImplementation(async () =>
-      Response.json({
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({
-                items: [{ name: "Творог", quantity: 400, unit: "g" }],
-                question: "Какой бренд и жирность творога?",
-              }),
-            },
+  const fetcher = vi.fn().mockImplementation(async () =>
+    Response.json({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              items: [{ name: "Творог", quantity: 400, unit: "g" }],
+              question: "Какой бренд и жирность творога?",
+            }),
           },
-        ],
-      }),
-    );
+        },
+      ],
+    }),
+  );
   const first = await interpretProducts(
     { turns: [{ role: "user", content: "Творог 400 граммов" }] },
     connection,
@@ -340,3 +338,53 @@ it("keeps manual edits authoritative after the AI acknowledges them and on later
   expect(later.rows[0].grams).toBe("300");
   expect(later.rows[0].voiceEdited).toContain("grams");
 });
+
+it.each([
+  {
+    quantity: 1,
+    unit: "l",
+    packageSize: null,
+    packageUnit: null,
+    grams: "1030",
+  },
+  {
+    quantity: 2,
+    unit: "pcs",
+    packageSize: 500,
+    packageUnit: "ml",
+    grams: "1030",
+  },
+  {
+    quantity: 1,
+    unit: "kg",
+    packageSize: null,
+    packageUnit: null,
+    grams: "1000",
+  },
+])(
+  "accepts milk in $unit without asking for grams again",
+  async ({ grams, ...amount }) => {
+    const fetcher = vi.fn(async () =>
+      Response.json({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                items: [{ name: "Молоко", ...amount }],
+                question: "Сколько это граммов?",
+              }),
+            },
+          },
+        ],
+      }),
+    );
+    const result = await interpretProducts(
+      { turns: [{ role: "user", content: "Молоко" }] },
+      connection,
+      undefined,
+      fetcher,
+    );
+    expect(result.question).toBe("");
+    expect(voiceDrafts(result.items, basicFoods)[0].grams).toBe(grams);
+  },
+);

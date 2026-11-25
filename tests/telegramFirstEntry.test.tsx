@@ -63,12 +63,13 @@ it.each([0, 1])(
   "distinguishes the Telegram name supplied by the server from a saved profile at revision %i",
   (revision) => {
     const state = { ...emptyState(), profile: { name: "Женя" } };
+    state.settings.profileConfirmed = revision > 0;
     const app = {
       state,
       session: {
         mode: "account",
         user: { displayName: "Женя" },
-        repository: { snapshot: { revision, state } },
+        repository: { snapshot: { revision: 7, state } },
       },
     } as unknown as AppController;
     render(<OnboardingDialog app={app} />);

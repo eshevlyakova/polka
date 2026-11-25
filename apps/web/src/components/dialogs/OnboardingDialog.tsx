@@ -8,8 +8,7 @@ export function OnboardingDialog({ app }: { app: AppController }) {
   const { state, commit, run } = app;
   const [confirmed, setConfirmed] = useState(
     app.session?.mode !== "account" ||
-      (Boolean(state.profile?.name?.trim()) &&
-        app.session.repository.snapshot.revision > 0),
+      state.settings.profileConfirmed === true,
   );
   const [profileError, setProfileError] = useState("");
   function begin(modal: "voice" | "receipt" | "pantry" | null) {
@@ -21,7 +20,7 @@ export function OnboardingDialog({ app }: { app: AppController }) {
       if (modal) app.setModal(modal);
     });
   }
-  if (state.settings.onboarded) return null;
+  if (confirmed && state.settings.onboarded) return null;
   if (!confirmed)
     return (
       <section className="welcome-screen welcome-profile">
@@ -38,6 +37,7 @@ export function OnboardingDialog({ app }: { app: AppController }) {
                 throw new Error("Укажи имя, чтобы продолжить.");
               await commit({
                 ...state,
+                settings: { ...state.settings, profileConfirmed: true },
                 profile: {
                   ...state.profile,
                   ...profile,

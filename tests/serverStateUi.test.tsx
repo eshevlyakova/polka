@@ -31,6 +31,7 @@ afterEach(() => {
 function open(save: (write: StateWrite) => Promise<StateSnapshot>) {
   const state = { ...emptyState(), profile: { name: "Анна" } };
   state.settings.onboarded = true;
+  state.settings.profileConfirmed = true;
   const user = {
     id: "00000000-0000-0000-0000-000000000001",
     telegramId: "100",

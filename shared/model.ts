@@ -61,6 +61,7 @@ export type DiaryEntry = {
 };
 export type Settings = {
   onboarded: boolean;
+  profileConfirmed?: boolean;
   calorieGoal: number;
   exclusions: string;
   maxMinutes: number;

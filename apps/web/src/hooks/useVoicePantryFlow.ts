@@ -54,7 +54,7 @@ export function useVoicePantryFlow(app: AppController) {
     finished: boolean,
     controller: AbortController,
   ) {
-    setBusy("Разбираем продукты…");
+    setBusy("Секунду…");
     setRetryTurns({ turns: next, finished });
     const edits = baseline.current.flatMap((old) => {
       const row = liveRows.current?.find((r) => r.id === old.id);
@@ -103,7 +103,11 @@ export function useVoicePantryFlow(app: AppController) {
         }
       }
     }
-    if (finished || finishRequested.current) {
+    if (
+      finished ||
+      finishRequested.current ||
+      (!response.question && merged.rows.length > 0)
+    ) {
       setVoiceActive(false);
       finishRequested.current = true;
     }
@@ -119,7 +123,7 @@ export function useVoicePantryFlow(app: AppController) {
     const controller = new AbortController();
     pending.current = controller;
     setRetryAudio({ blob, finished });
-    setBusy("Слушаем запись…");
+    setBusy("Секунду…");
     setError("");
     try {
       const transcript = await transcribeAudio(blob, controller.signal);

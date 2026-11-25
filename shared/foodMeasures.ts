@@ -33,6 +33,8 @@ export function foodMeasures(food?: Pick<Food, "id" | "name">): Measure[] {
         { id: "piece", label: "шт.", approximate: true, ...vegetable },
       ];
   }
+  if ((food.id === "milk" || /молок[оа]/.test(n)) && !/сух|сгущ|порош|шоколад/.test(n))
+    return [gram, { id: "ml", label: "мл", grams: 1.03, approximate: true }];
   if (food.id === "oil" || /масло.*(?:растит|оливк|подсол)/.test(n))
     return [
       gram,

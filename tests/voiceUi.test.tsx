@@ -122,7 +122,7 @@ it("speaks clarifications before resuming the microphone and keeps an editable l
   expect(screen.queryByLabelText("Написать продукты или ответ")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Начать диктовку" }));
   await say("Две пачки творога");
-  await screen.findByLabelText("Название продукта 1");
+  expect(screen.queryByLabelText("Название продукта 1")).toBeNull();
   expect(harness.speak).toHaveBeenCalledWith(
     "Сколько граммов в пачке?",
     expect.any(AbortSignal),
@@ -164,6 +164,7 @@ it("preserves edits across subsequent AI responses and retains the list after a 
   fireEvent.change(screen.getByLabelText("Масса, г"), {
     target: { value: "300" },
   });
+  fireEvent.click(screen.getByRole("button", { name: "Продолжить диктовку" }));
   await say("И больше ничего");
   expect((screen.getByLabelText("Масса, г") as HTMLInputElement).value).toBe(
     "300",
@@ -203,7 +204,7 @@ it("keeps the last failed phrase retryable and blocks saving an incomplete inter
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(true);
-  expect(screen.getByText("И ещё помидоры")).toBeTruthy();
+  expect(screen.queryByText("И ещё помидоры")).toBeNull();
   fireEvent.click(
     screen.getByRole("button", { name: "Пропустить последнюю фразу" }),
   );

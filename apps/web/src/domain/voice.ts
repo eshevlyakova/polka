@@ -1,3 +1,4 @@
+import { voiceVolume } from "../../../../shared/voice";
 import type { ReceiptItem } from "../../../../shared/receipt";
 import type { Food } from "./model";
 import { receiptDrafts } from "./receipt";
@@ -7,6 +8,13 @@ import { foodMeasures } from "./measures";
 export function voiceDrafts(items: ReceiptItem[], catalog: Food[]) {
   return receiptDrafts(items, catalog).map((row) => {
     const item = row.recognized;
+    const volume = voiceVolume(item);
+    if (!row.grams && volume)
+      return {
+        ...row,
+        grams: String(volume.grams),
+        quantityHint: `${volume.ml.toLocaleString("ru")} мл · примерно ${volume.grams.toLocaleString("ru")} г`,
+      };
     if (row.grams || !item.quantity || !row.foodId || item.packageSize !== null)
       return row;
     const food = row.options.find((f) => f.id === row.foodId);

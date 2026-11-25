@@ -259,7 +259,6 @@
 .voice-live .voice-stage-copy { min-width: 0; }
 .voice-live .voice-stage h3 { font-size: 19px; margin: 0 0 7px; }
 .voice-live .voice-stage p { font-size: 14px; line-height: 1.5; }
-.voice-last-phrase { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .voice-live-controls { display: flex; align-items: center; gap: 8px; }
 .voice-live-controls .primary { flex: 1; min-width: 0; }
 .voice-live-controls .icon-button { flex: 0 0 44px; }

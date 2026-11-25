@@ -7,6 +7,23 @@ export const VOICE_AUDIO_MAX_BYTES = 3_000_000;
 export type VoiceTurn = { role: "user" | "assistant"; content: string };
 export type VoiceResult = { items: ReceiptItem[]; question: string };
 
+/** Kitchen estimates used consistently for clarification and review. */
+export function voiceVolume(item: ReceiptLine) {
+  const packed = item.unit === "pcs" && item.packageSize !== null;
+  const unit = packed ? item.packageUnit : item.unit;
+  if (!item.quantity || (unit !== "ml" && unit !== "l")) return null;
+  const ml =
+    item.quantity *
+    (packed ? item.packageSize! : 1) *
+    (unit === "l" ? 1000 : 1);
+  const measure = foodMeasures({ id: "", name: item.name }).find(
+    (m) => m.id === "ml",
+  );
+  if (!measure) return null;
+  const grams = Math.round(ml * measure.grams);
+  return grams > 0 && grams <= 100000 ? { ml, grams } : null;
+}
+
 /** Completeness is an application rule, not an optional model suggestion. */
 export function quantityQuestion(items: ReceiptLine[]): string {
   for (const item of items) {
@@ -19,7 +36,7 @@ export function quantityQuestion(items: ReceiptLine[]): string {
       return pieces
         ? `${name}: сколько штук у тебя есть? Можно указать массу в граммах.`
         : `${name}: сколько граммов у тебя есть? Можно назвать количество упаковок и массу одной.`;
-    if (receiptGrams(item) !== null) continue;
+    if (receiptGrams(item) !== null || voiceVolume(item)) continue;
     if (item.unit === "pcs" && item.packageSize === null && pieces) continue;
     if (item.unit === "pcs")
       return `${name}: сколько граммов в одной упаковке? У тебя их ${item.quantity.toLocaleString("ru")}.`;
