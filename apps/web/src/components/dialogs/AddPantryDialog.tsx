@@ -1,4 +1,4 @@
-import { ScanLine, Pencil, ArrowUpRight } from "lucide-react";
+import { ScanLine, Pencil, ArrowUpRight, Mic } from "lucide-react";
 import { Modal } from "../ui";
 import type { AppController } from "../../hooks/useAppController";
 export function AddPantryDialog({ app }: { app: AppController }) {
@@ -6,6 +6,19 @@ export function AddPantryDialog({ app }: { app: AppController }) {
   return (
     <Modal title="Пополнить полку" onClose={() => app.setModal(null)}>
       <div className="add-pantry-choices">
+        <button
+          className="add-choice voice-choice"
+          onClick={() => app.setModal("voice")}
+        >
+          <span className="choice-icon">
+            <Mic size={26} />
+          </span>
+          <span>
+            <strong>Голосом</strong>
+            <small>Назови продукты — соберём список</small>
+          </span>
+          <ArrowUpRight size={21} />
+        </button>
         <button
           className="add-choice scan-choice"
           onClick={() => app.setModal("receipt")}

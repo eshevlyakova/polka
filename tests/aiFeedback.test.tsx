@@ -76,16 +76,16 @@ it("hides the previous AI selection when the next request fails", async () => {
   );
   render(<App />);
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   await screen.findByText("Предыдущая яичница");
   expect(screen.queryByText(/Рецепты готовы\./)).toBeNull();
   expect(screen.queryByText(/В каталоге нет точного совпадения/)).toBeNull();
-  fireEvent.change(screen.getByLabelText("Что хочется сегодня?"), {
+  fireEvent.change(screen.getByLabelText("Пожелания к рецептам"), {
     target: { value: "Завтрак с яйцом" },
   });
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   await screen.findByRole("alert");
   expect(screen.queryByText("Предыдущая яичница")).toBeNull();
@@ -118,11 +118,11 @@ it("offers a full-width cancel action and aborts the recipe request without show
       ),
   );
   render(<App />);
-  fireEvent.change(screen.getByLabelText("Что хочется сегодня?"), {
+  fireEvent.change(screen.getByLabelText("Пожелания к рецептам"), {
     target: { value: "Хочу завтрак из творога" },
   });
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   const cancel = screen.getByRole("button", { name: "Отменить подбор" });
   expect(cancel.className).toContain("cancel-action");
@@ -131,13 +131,13 @@ it("offers a full-width cancel action and aborts the recipe request without show
   expect(
     (
       screen.getByRole("button", {
-        name: "Подобрать рецепты",
+        name: "Найти рецепты",
         exact: true,
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(false);
   expect(
-    (screen.getByLabelText("Что хочется сегодня?") as HTMLTextAreaElement)
+    (screen.getByLabelText("Пожелания к рецептам") as HTMLTextAreaElement)
       .value,
   ).toContain("творога");
 });
@@ -155,16 +155,16 @@ it("lets the user dismiss an API error or clear it by editing wishes", async () 
   );
   render(<App />);
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   await screen.findByRole("alert");
   fireEvent.click(screen.getByRole("button", { name: "Скрыть ошибку" }));
   expect(screen.queryByRole("alert")).toBeNull();
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   await screen.findByRole("alert");
-  fireEvent.change(screen.getByLabelText("Что хочется сегодня?"), {
+  fireEvent.change(screen.getByLabelText("Пожелания к рецептам"), {
     target: { value: "Другой завтрак" },
   });
   expect(screen.queryByRole("alert")).toBeNull();

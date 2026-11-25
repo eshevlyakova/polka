@@ -116,7 +116,7 @@ it("uses the free vision model, gets nutrition from the catalog and sanitizes pr
 it("receipt API rejects unauthenticated or oversized requests before sending an image", async () => {
   const env = {
     API_GLM: "private-test-key",
-    AI_TEST_CODE: "closed",
+    BOT_TOKEN: "test-bot",
     ALLOWED_ORIGIN: "https://front.test",
   };
   const request = () =>

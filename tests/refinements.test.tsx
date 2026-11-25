@@ -135,7 +135,7 @@ it("requires package confirmation for a remote match and saves food and stock at
   expect(
     JSON.parse(localStorage.getItem("polka:v1:browser")!).customFoods,
   ).toHaveLength(0);
-  fireEvent.click(screen.getByRole("checkbox", { name: /Упаковка совпадает/ }));
+  fireEvent.click(screen.getByRole("checkbox", { name: /Продукт совпадает/ }));
   fireEvent.click(screen.getByRole("button", { name: "Сохранить продукт" }));
   const saved = JSON.parse(localStorage.getItem("polka:v1:browser")!);
   expect(saved.customFoods[0].id).toBe("off-test");
@@ -164,4 +164,52 @@ it("uses time of day for the suggested meal and estimates portion weight consist
   expect(estimateWeight(r, scaled) / 6).toBeCloseTo(estimateWeight(r) / 3);
   const omelet = recipes[0];
   expect(estimateWeight(omelet) / 2).toBe(185);
+});
+
+it("records a new branded food from the catalog outside the pantry using the actual serving", async () => {
+  const match = {
+    id: "off-yogurt",
+    name: "Йогурт натуральный",
+    brand: "Луга",
+    barcode: "4600000000001",
+    basis: "per100g",
+    per100: { kcal: 80, protein: 4, fat: 3, carbs: 9 },
+    source: { url: "https://world.openfoodfacts.org/product/4600000000001" },
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation(async () => Response.json({ items: [match] })),
+  );
+  render(<App />);
+  const read = () => JSON.parse(localStorage.getItem("polka:v1:browser")!);
+  const before = read();
+  fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Другая еда", exact: true }),
+  );
+  fireEvent.change(screen.getByLabelText("Найти еду"), {
+    target: { value: "Луга" },
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: /Йогурт натуральный/ }),
+  );
+  fireEvent.change(screen.getByLabelText("Количество, г"), {
+    target: { value: "150" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+  expect(screen.getByRole("alert")).toBeTruthy();
+  expect(read().diary).toEqual(before.diary);
+  fireEvent.click(screen.getByRole("checkbox", { name: /Продукт совпадает/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Добавить в дневник" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(read().pantry).toEqual(before.pantry);
+  expect(read().diary[0]).toMatchObject({
+    name: "Йогурт натуральный · Луга",
+    nutrients: { kcal: 120 },
+    source: "Другая еда",
+  });
+  expect(read().customFoods.at(-1).id).toBe(match.id);
 });

@@ -7,12 +7,13 @@ import {
 import { adaptationReferences } from "../catalog/recipeContext";
 import { perishableScore } from "../../../../shared/perishability";
 
-import { completion } from "./zai";
+import { completion } from "./client";
+import type { AiCredentials } from "./config";
 import { normalizeModelPayload } from "./recipePayload";
 import { recipeLibrary } from "../catalog/library";
 export async function generateRecipes(
   request: AiRecipeRequest,
-  key: string,
+  key: AiCredentials,
   fetcher: typeof fetch = fetch,
   signal?: AbortSignal,
 ) {

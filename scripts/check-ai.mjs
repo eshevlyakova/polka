@@ -1,8 +1,13 @@
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { generateRecipes } = require("../apps/backend/dist/apps/backend/src/ai/provider.js");
-if (!process.env.API_GLM) {
-  console.error("В .env не задан API_GLM.");
+const {
+  generateRecipes,
+} = require("../apps/backend/dist/apps/backend/src/ai/provider.js");
+const {
+  aiCredentials,
+} = require("../apps/backend/dist/apps/backend/src/ai/config.js");
+if (!process.env.TIMEWEB_AI_TOKEN && !process.env.API_GLM) {
+  console.error("В .env не задан TIMEWEB_AI_TOKEN или API_GLM.");
   process.exit(1);
 }
 try {
@@ -17,13 +22,15 @@ try {
         { foodId: "oil", name: "Масло растительное", grams: 10, expiresOn: "" },
       ],
     },
-    process.env.API_GLM,
+    aiCredentials(process.env),
   );
   console.log(
     JSON.stringify(
       {
         ok: true,
-        model: "glm-4.7-flash",
+        model: process.env.TIMEWEB_AI_TOKEN
+          ? process.env.AI_TEXT_MODEL || "deepseek/deepseek-flash"
+          : "glm-4.7-flash",
         recipes: result.map((recipe) => ({
           name: recipe.name,
           minutes: recipe.minutes,

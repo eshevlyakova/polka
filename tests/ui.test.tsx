@@ -19,11 +19,11 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
 });
-it("real input persists pantry and diary across remount", () => {
+it("real input persists pantry and diary across remount", async () => {
   localStorage.setItem("polka:v1:browser", JSON.stringify(emptyState()));
   localStorage.setItem("polka:v1:browser:demo-ready-v3", "1");
   const view = render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "Начать", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Позже", exact: true }));
   fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Добавить продукт", exact: true }),
@@ -37,7 +37,10 @@ it("real input persists pantry and diary across remount", () => {
     target: { value: "400" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Сохранить продукт" }));
-  expect(screen.getByText("400 г")).toBeTruthy();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(
+    JSON.parse(localStorage.getItem("polka:v1:browser")!).pantry[0].grams,
+  ).toBe(400);
   fireEvent.click(screen.getByRole("button", { name: "Дневник", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Записать приём пищи", exact: true }),
@@ -132,9 +135,7 @@ it("bottom navigation and back preserve screen and close form", () => {
   expect(
     navigation.getAllByRole("button").map((button) => button.textContent),
   ).toEqual(["Главная", "Полка", "Дневник", "Профиль"]);
-  expect(
-    screen.getByRole("heading", { name: "Что хочется сегодня?" }),
-  ).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Что приготовим?" })).toBeTruthy();
   expect(screen.queryByText("Моя цель")).toBeNull();
   expect(screen.queryByText("Съедено сегодня")).toBeNull();
   expect(screen.queryByText(/скоропорт/i)).toBeNull();
@@ -149,6 +150,8 @@ it("bottom navigation and back preserve screen and close form", () => {
   fireEvent.click(
     screen.getAllByRole("button", { name: "Назад", exact: true }).at(-1)!,
   );
+  expect(screen.getByRole("dialog", { name: "Пополнить полку" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Закрыть" }));
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(screen.getByRole("heading", { name: "Запасы" })).toBeTruthy();
   expect(
@@ -217,6 +220,10 @@ it("time buttons filter recipes and Escape leaves the food form open", () => {
   fireEvent.click(
     screen.getByRole("button", { name: "Продукт с полки", exact: true }),
   );
+  const choice = document.querySelector<HTMLButtonElement>(
+    ".food-picker-results > button",
+  );
+  if (choice) fireEvent.click(choice);
   const meal = screen.getByRole("combobox", { name: "Приём пищи" });
   fireEvent.click(meal);
   fireEvent.keyDown(meal, { key: "End" });
@@ -247,6 +254,10 @@ it("adds multiple dishes to the same meal on a previous week", async () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Продукт с полки", exact: true }),
     );
+    const choices = document.querySelectorAll<HTMLButtonElement>(
+      ".food-picker-results > button",
+    );
+    if (choices.length) fireEvent.click(choices[0]);
     fireEvent.change(screen.getByLabelText("Количество, г"), {
       target: { value: "100" },
     });
@@ -260,14 +271,23 @@ it("adds multiple dishes to the same meal on a previous week", async () => {
   ).toBeNull();
 });
 
-it("pantry recipe action filters by product and can return to pantry", () => {
+it("pantry recipe action filters by product and can return to pantry", async () => {
   render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "Полка", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Рецепты с продуктом: Яйцо" }),
   );
-  expect(screen.getByRole("button", { name: /Омлет с томатами/ })).toBeTruthy();
-  expect(screen.queryByRole("button", { name: /Курица с рисом/ })).toBeNull();
+  await waitFor(() =>
+    expect(
+      document.querySelector(".personal-ideas .library-card"),
+    ).toBeTruthy(),
+  );
+  expect(
+    document.querySelectorAll(".personal-ideas .library-card"),
+  ).toHaveLength(3);
+  expect(screen.getByLabelText("Подборка по продукту").textContent).toContain(
+    "Яйцо",
+  );
   expect(screen.queryByRole("heading", { name: "Готовые остатки" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "К полке" }));
   expect(screen.getByRole("heading", { name: "Запасы" })).toBeTruthy();
@@ -326,6 +346,10 @@ it("the intake form switches between shelf and other food and preserves selected
     fireEvent.click(
       screen.getByRole("button", { name: "Продукт с полки", exact: true }),
     );
+  const foodChoices = document.querySelectorAll<HTMLButtonElement>(
+    ".food-picker-results > button",
+  );
+  if (foodChoices.length) fireEvent.click(foodChoices[0]);
   fireEvent.change(screen.getByLabelText("Количество, г"), {
     target: { value: "150" },
   });

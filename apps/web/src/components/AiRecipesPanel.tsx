@@ -1,5 +1,15 @@
+import { useRecipePresence } from "../hooks/useRecipePresence";
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, LoaderCircle, Clock3, PenLine, X } from "lucide-react";
+import {
+  Search,
+  LoaderCircle,
+  Clock3,
+  PenLine,
+  X,
+  Mic,
+  ChefHat,
+} from "lucide-react";
+import { RecipeVoiceInput } from "./RecipeVoiceInput";
 import { useTimedError } from "../hooks/useTimedError";
 import { FeedbackError } from "./FeedbackError";
 import { fetchAiRecipes, fetchAiRecipeSearch } from "../api/aiRecipes";
@@ -11,8 +21,13 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
   const configured =
     import.meta.env.DEV || Boolean(import.meta.env.VITE_AI_API_URL);
   const [preferences, setPreferences] = useState("");
-  const [minutes, setMinutes] = useState(String(app.state.settings.maxMinutes));
-  const [testCode, setTestCode] = useState("");
+  const [inputMode, setInputMode] = useState<"text" | "voice">("text");
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [minutes, setMinutes] = useState(
+    app.state.settings.maxMinutes === 2880
+      ? ""
+      : String(app.state.settings.maxMinutes),
+  );
   const [busy, setBusy] = useState(false);
   const { error, setError } = useTimedError();
   const [showGenerated, setShowGenerated] = useState(false);
@@ -43,19 +58,31 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
       (!app.recipeFoodId ||
         recipe.ingredients.some((item) => item.foodId === app.recipeFoodId)),
   );
+  const generatedCards = useRecipePresence(
+    generated.filter((r) => !app.isRecipeRated(r.id)),
+    app.isRecipeRated,
+  );
+  const previewCards = useRecipePresence(
+    app.library.page?.items
+      .filter((r) => !app.isRecipeRated(r.id))
+      .slice(0, 3) ?? [],
+    app.isRecipeRated,
+  );
   return (
     <section className="ai-recipes" aria-label="Подбор рецептов">
       <form
         className="ai-preferences-form"
         onSubmit={async (event) => {
           event.preventDefault();
-          if (pending.current) return;
+          if (pending.current || voiceBusy) return;
           const controller = new AbortController();
+          const limitMinutes = minutes.trim() ? Number(minutes) : 2880;
           try {
             if (
-              !Number.isInteger(Number(minutes)) ||
-              Number(minutes) < 5 ||
-              Number(minutes) > 360
+              minutes.trim() &&
+              (!Number.isInteger(Number(minutes)) ||
+                Number(minutes) < 5 ||
+                Number(minutes) > 360)
             )
               throw new Error("Время — целое число от 5 до 360 минут.");
             pending.current = controller;
@@ -64,15 +91,12 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
             setShowGenerated(false);
             app.library.clear();
             // In an account, persist request settings once, not on every keystroke.
-            if (
-              app.session?.mode === "account" &&
-              Number(minutes) !== app.state.settings.maxMinutes
-            )
+            if (limitMinutes !== app.state.settings.maxMinutes)
               await app.commit({
                 ...app.state,
                 settings: {
                   ...app.state.settings,
-                  maxMinutes: Number(minutes),
+                  maxMinutes: limitMinutes,
                 },
               });
             if (controller.signal.aborted) return;
@@ -81,7 +105,7 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
                 ...app.state,
                 settings: {
                   ...app.state.settings,
-                  maxMinutes: Number(minutes),
+                  maxMinutes: limitMinutes,
                 },
               },
               app.catalog,
@@ -98,7 +122,6 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
             );
             const search = await fetchAiRecipeSearch(
               input,
-              testCode,
               controller.signal,
             );
             if (controller.signal.aborted) return;
@@ -120,7 +143,10 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
                 );
             };
             ensureCurrent();
-            const page = await app.library.search(search);
+            const page = await app.library.search({
+              ...search,
+              maxMinutes: minutes.trim() ? search.maxMinutes : 0,
+            });
             if (controller.signal.aborted) return;
             ensureCurrent();
             if (!page)
@@ -134,7 +160,6 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
                 exclusions: search.exclusions,
                 requiredIngredients: search.requiredIngredients,
               },
-              testCode,
               controller.signal,
             );
             if (controller.signal.aborted) return;
@@ -174,24 +199,71 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
           }
         }}
       >
-        <h1 className="wish-label">
-          <label htmlFor="recipe-wishes">Что хочется сегодня?</label>
-        </h1>
-        <div className="wish-note">
-          <PenLine size={18} className="wish-note-icon" aria-hidden="true" />
-          <textarea
-            id="recipe-wishes"
-            rows={2}
-            maxLength={600}
-            value={preferences}
+        <div className="wish-heading">
+          <span className="section-eyebrow">
+            <ChefHat size={16} /> Из твоих продуктов
+          </span>
+          <h1 className="wish-label">Что приготовим?</h1>
+        </div>
+        <div
+          className="wish-input-modes"
+          role="group"
+          aria-label="Как указать пожелания"
+        >
+          <button
+            type="button"
+            aria-pressed={inputMode === "text"}
+            disabled={busy || voiceBusy}
+            onClick={() => setInputMode("text")}
+          >
+            <PenLine size={16} />
+            Текст
+          </button>
+          <button
+            type="button"
+            aria-pressed={inputMode === "voice"}
+            disabled={busy || voiceBusy}
+            onClick={() => setInputMode("voice")}
+          >
+            <Mic size={16} />
+            Голос
+          </button>
+        </div>
+        {inputMode === "voice" && (
+          <RecipeVoiceInput
             disabled={busy || !configured}
-            onChange={(event) => {
-              setPreferences(event.target.value);
+            onBusy={setVoiceBusy}
+            onTranscript={(text) => {
+              const next = [preferences.trim(), text.trim()]
+                .filter(Boolean)
+                .join(" ");
+              if (next.length > 600)
+                throw new Error(
+                  "Пожелания слишком длинные. Сократи текст или продиктуй короче.",
+                );
+              setPreferences(next);
               setError("");
             }}
-            placeholder="Например, тёплый ужин без мяса…"
           />
-        </div>
+        )}
+        {(inputMode === "text" || preferences) && (
+          <div className="wish-note">
+            <PenLine size={18} className="wish-note-icon" aria-hidden="true" />
+            <textarea
+              id="recipe-wishes"
+              aria-label="Пожелания к рецептам"
+              rows={2}
+              maxLength={600}
+              value={preferences}
+              disabled={busy || voiceBusy || !configured}
+              onChange={(event) => {
+                setPreferences(event.target.value);
+                setError("");
+              }}
+              placeholder="Например, завтрак из творога без сахара"
+            />
+          </div>
+        )}
         <label className="time-manual">
           <span>
             <Clock3 size={16} />
@@ -200,6 +272,7 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
           <span className="time-manual-input">
             <input
               aria-label="Время на готовку, мин"
+              placeholder="Любое"
               type="number"
               inputMode="numeric"
               min="5"
@@ -231,32 +304,15 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
             <span>мин</span>
           </span>
         </label>
-        {import.meta.env.VITE_AI_API_URL && (
-          <details className="ai-access">
-            <summary>Код для закрытого тестирования</summary>
-            <label>
-              Код доступа
-              <input
-                type="password"
-                autoComplete="off"
-                value={testCode}
-                maxLength={200}
-                onChange={(event) => setTestCode(event.target.value)}
-              />
-              <span className="muted">
-                Нужен, если открываешь тестовую версию вне Telegram.
-              </span>
-            </label>
-          </details>
-        )}
+
         <FeedbackError message={error} onDismiss={() => setError("")} />
-        <button className="primary" disabled={busy || !configured}>
+        <button className="primary" disabled={busy || voiceBusy || !configured}>
           {busy ? (
             <LoaderCircle size={18} className="ai-spinner" />
           ) : (
-            <Sparkles size={18} />
+            <Search size={18} />
           )}
-          {busy ? "Подбираем рецепты…" : "Подобрать рецепты"}
+          {busy ? "Ищем рецепты…" : "Найти рецепты"}
         </button>
         {busy && (
           <button
@@ -282,11 +338,14 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
               Найдено {app.library.page.total}
             </span>
           </div>
-          {app.library.page.items.slice(0, 3).map((r) => (
+          {previewCards.map(({ item: r, leaving }) => (
             <LibraryRecipeCard
               key={r.id}
               recipe={r}
+              leaving={leaving}
               onOpen={app.openLibraryRecipe}
+              disabled={app.saving}
+              onRate={(rating) => app.rateLibraryRecipe(r, rating)}
             />
           ))}
           <button className="secondary" onClick={app.openLibrary}>
@@ -310,7 +369,9 @@ export function AiRecipesPanel({ app }: { app: AppController }) {
                 Убрать подборку
               </button>
             </div>
-            {generated.map(app.recipeCard)}
+            {generatedCards.map(({ item, leaving }) =>
+              app.recipeCard(item, leaving),
+            )}
           </div>
         )}
     </section>

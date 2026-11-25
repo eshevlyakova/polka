@@ -10,14 +10,13 @@ import { sessionAuthorization } from "./account";
 
 async function requestAi(
   input: AiRecipeRequest,
-  testCode: string,
   signal: AbortSignal,
   task?: "search",
 ) {
   const url = apiEndpoint("/api/ai/recipes");
   if (!url)
     throw new Error(
-      "ИИ ещё не подключён к опубликованной версии. Нужен адрес нашего API; обычные рецепты доступны ниже.",
+      "Подбор рецептов сейчас недоступен. Попробуй позже.",
     );
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -26,7 +25,6 @@ async function requestAi(
     sessionAuthorization() ??
     (telegram?.initData ? `tma ${telegram.initData}` : undefined);
   if (authorization) headers.Authorization = authorization;
-  if (testCode.trim()) headers["X-Polka-Test-Code"] = testCode.trim();
   let response: Response;
   try {
     response = await fetch(url, {
@@ -58,10 +56,9 @@ async function requestAi(
 
 export async function fetchAiRecipeSearch(
   input: AiRecipeRequest,
-  testCode: string,
   signal: AbortSignal,
 ) {
-  const data = await requestAi(input, testCode, signal, "search");
+  const data = await requestAi(input, signal, "search");
   if (!data.search)
     throw new Error(
       "Не удалось получить условия поиска от ИИ. Попробуй ещё раз.",
@@ -71,10 +68,9 @@ export async function fetchAiRecipeSearch(
 
 export async function fetchAiRecipes(
   input: AiRecipeRequest,
-  testCode: string,
   signal: AbortSignal,
 ): Promise<Recipe[]> {
-  const data = await requestAi(input, testCode, signal);
+  const data = await requestAi(input, signal);
   const validated = validateAiRecipes(data, input);
   return validated.map((recipe, index) => ({
     ...recipe,

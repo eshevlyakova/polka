@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { validNutrition } from "../../../../../shared/nutritionMatching";
 import { inputNumber } from "../../domain/input";
 import type { Food } from "../../domain/model";
 import type { AppController } from "../../hooks/useAppController";
@@ -6,9 +7,11 @@ import type { AppController } from "../../hooks/useAppController";
 export function CustomFoodForm({
   app,
   onCreated,
+  initialName = "",
 }: {
   app: AppController;
   onCreated: (food: Food) => void;
+  initialName?: string;
 }) {
   const [error, setError] = useState("");
   return (
@@ -31,6 +34,10 @@ export function CustomFoodForm({
               carbs: inputNumber(data, "carbs"),
             },
           };
+          if (!validNutrition(food.per100))
+            throw new Error(
+              "Проверь значения на 100 г: до 950 ккал и до 100 г каждого макронутриента.",
+            );
           await app.commit({
             ...app.state,
             customFoods: [...app.state.customFoods, food],
@@ -47,6 +54,7 @@ export function CustomFoodForm({
         Название
         <input
           name="name"
+          defaultValue={initialName.slice(0, 80)}
           required
           maxLength={80}
           placeholder="Например, сырники из кафе"
@@ -70,6 +78,7 @@ export function CustomFoodForm({
               inputMode="decimal"
               step="0.1"
               min="0"
+              max={key === "kcal" ? 950 : 100}
               required
             />
           </label>

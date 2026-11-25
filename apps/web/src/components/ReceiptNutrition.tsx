@@ -44,6 +44,8 @@ export function ReceiptNutrition({
       const next = receiptDrafts([recognized], catalog)[0];
       onChange({
         ...next,
+        id: current.id,
+        voiceEdited: current.voiceEdited,
         grams: current.grams,
         selected: current.selected,
         nutrition: current.nutrition,
@@ -104,7 +106,9 @@ export function ReceiptNutrition({
           target="_blank"
           rel="noreferrer"
         >
-          Open Food Facts · ODbL
+          {candidate.sourceUrl.includes("openfoodfacts.org/")
+            ? "Open Food Facts · ODbL"
+            : "Карточка продукта"}
         </a>
       )}
       <label className="receipt-match-search">

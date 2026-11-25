@@ -81,6 +81,16 @@ it("requires review and missing mass, and keeps the review intact after a storag
   fireEvent.change(screen.getByLabelText("Масса, г"), {
     target: { value: "500" },
   });
+  fireEvent.click(screen.getByRole("button", { name: "Назад" }));
+  await screen.findByRole("img", { name: "Выбранное фото чека" });
+  fireEvent.click(screen.getByRole("button", { name: "Вернуться к списку" }));
+  expect((screen.getByLabelText("Масса, г") as HTMLInputElement).value).toBe(
+    "500",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Закрыть" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Продолжить со списком" }),
+  );
   vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
     throw new Error("storage full");
   });
@@ -120,14 +130,15 @@ it("provider overload leaves the photo and pantry unchanged for retry", async ()
   expect(screen.getByRole("img", { name: "Выбранное фото чека" })).toBeTruthy();
   expect(localStorage.getItem("polka:v1:browser")).toBe(before);
 });
-it("profile editing hides weight inputs and preserves existing weight history", () => {
+it("profile editing offers optional weight and preserves existing weight history", () => {
   render(<App />);
   const before = JSON.parse(localStorage.getItem("polka:v1:browser")!).profile;
   fireEvent.click(screen.getByRole("button", { name: "Профиль", exact: true }));
   fireEvent.click(
     screen.getByRole("button", { name: "Изменить", exact: true }),
   );
-  expect(screen.queryByLabelText(/вес/i)).toBeNull();
+  expect(screen.getByLabelText(/Текущий вес/i)).toBeTruthy();
+  expect(screen.queryByLabelText(/Желаемый вес/i)).toBeNull();
   fireEvent.change(screen.getByLabelText("Имя"), { target: { value: "Аня" } });
   fireEvent.click(screen.getByRole("button", { name: "Сохранить профиль" }));
   const after = JSON.parse(localStorage.getItem("polka:v1:browser")!).profile;

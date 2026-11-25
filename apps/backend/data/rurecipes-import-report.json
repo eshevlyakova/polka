@@ -1,0 +1,33 @@
+{
+  "examined": 92144,
+  "eligibleBeforeSelection": 26324,
+  "selectedByCategory": {
+    "main": 1000,
+    "salad": 400,
+    "soup": 350,
+    "breakfast": 300,
+    "bread": 200,
+    "dessert": 175,
+    "side": 50,
+    "sauce": 17,
+    "drink": 7
+  },
+  "rejected": {
+    "incomplete_amounts": 30421,
+    "structure": 29726,
+    "duplicate_title_or_url": 4868,
+    "name": 127,
+    "outside_initial_scope": 641,
+    "steps": 37
+  },
+  "sourceUrl": "https://huggingface.co/datasets/epishchik/RuRecipes-93k",
+  "sourceFile": "data/train-00000-of-00001.parquet",
+  "sourceSha256": "173edd39b10916c82a25fe821ce7dc1b90ccdae3aecbc2f0c3fb7b00940a3d9e",
+  "importedAt": "2026-11-24",
+  "total": 3000,
+  "preserved": 501,
+  "added": 2499,
+  "license": "CC BY-NC 4.0",
+  "usage": "Noncommercial prototype only. Attribution and original links retained. No photographs.",
+  "missingMetadata": "Time, servings and nutrition are null; never guessed from steps. Categories are heuristic. Raw unclear amounts retained in rawAmount."
+}

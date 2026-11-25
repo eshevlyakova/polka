@@ -7,6 +7,8 @@ import { basicFoods } from "../../../../shared/basicFoods";
 import type { AppState, Food, Nutrients } from "./model";
 import type { ReceiptItem } from "../../../../shared/receipt";
 export type ReceiptDraft = {
+  voiceEdited?: string[];
+  quantityHint?: string;
   id: string;
   name: string;
   selected: boolean;

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node ../../scripts/build-library-snapshot.mjs",
     "prebuild": "node ../../scripts/build-library-snapshot.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",

@@ -54,6 +54,32 @@ export function PortionFields({
           required
         />
       </label>
+      <div className="quantity-presets" aria-label="Быстро указать порцию">
+        {(unit === "servings"
+          ? [0.5, 1, 2]
+          : unit === "grams"
+            ? [100, 200, 300]
+            : [25, 50, 100]
+        ).map((n) => (
+          <button
+            type="button"
+            key={n}
+            disabled={
+              (unit === "servings"
+                ? n / batch.servings
+                : unit === "grams"
+                  ? n / batchWeight(batch)!
+                  : n / 100) >
+              batch.remainingFraction + 1e-6
+            }
+            aria-pressed={amount === String(n)}
+            onClick={() => onAmount(String(n))}
+          >
+            {n.toLocaleString("ru")}{" "}
+            {unit === "servings" ? "порц." : unit === "grams" ? "г" : "%"}
+          </button>
+        ))}
+      </div>
       <p className="intake-measure-note">{portionLabel(batch)}</p>
     </>
   );

@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
-import { Search, Check, ArrowLeft } from "lucide-react";
+import { useCatalogLookup } from "../../hooks/useCatalogLookup";
+import { CatalogConfirmation } from "../CatalogConfirmation";
+import { useState } from "react";
+import { Search, Check } from "lucide-react";
 import { Select } from "../Select";
 import { FoodArt } from "../FoodArt";
+import { CustomFoodForm } from "./CustomFoodForm";
 import { Modal } from "../ui";
 import { foodMeasures } from "../../domain/measures";
-import {
-  searchCatalogProducts,
-  type CatalogMatch,
-} from "../../api/catalogProducts";
+import { catalogFood, type CatalogMatch } from "../../api/catalogProducts";
 import type { Food } from "../../domain/model";
 import type { AppController } from "../../hooks/useAppController";
 const normalize = (s: string) => s.toLocaleLowerCase("ru").replace(/ё/g, "е");
@@ -15,15 +15,17 @@ export function PantryDialog({ app }: { app: AppController }) {
   return app.modal === "pantry" ? <PantryForm app={app} /> : null;
 }
 function PantryForm({ app }: { app: AppController }) {
+  const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
   const [food, setFood] = useState<Food | undefined>(
     app.catalog.find((f) => f.id === app.pantryFoodId),
   );
-  const [remote, setRemote] = useState<CatalogMatch[]>([]);
+  const { remote, busy, searchError } = useCatalogLookup(
+    query,
+    !creating && !food,
+  );
   const [picked, setPicked] = useState<CatalogMatch | null>(null);
   const [confirmed, setConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [searchError, setSearchError] = useState("");
   const [error, setError] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState(food?.id === "egg" ? "piece" : "g");
@@ -33,32 +35,8 @@ function PantryForm({ app }: { app: AppController }) {
   const local = app.catalog
     .filter((f) => terms.every((t) => normalize(f.name).includes(t)))
     .slice(0, 8);
-  useEffect(() => {
-    setRemote([]);
-    setSearchError("");
-    setBusy(false);
-    if (query.trim().length < 2 || food) return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      setBusy(true);
-      try {
-        const matches = await searchCatalogProducts(
-          query.trim(),
-          controller.signal,
-        );
-        if (!controller.signal.aborted) setRemote(matches);
-      } catch (err) {
-        if (!controller.signal.aborted) setSearchError((err as Error).message);
-      } finally {
-        if (!controller.signal.aborted) setBusy(false);
-      }
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, food]);
   function choose(next: Food, candidate: CatalogMatch | null = null) {
+    setQuantity("");
     setFood(next);
     setPicked(candidate);
     setConfirmed(false);
@@ -66,8 +44,28 @@ function PantryForm({ app }: { app: AppController }) {
     setUnit(next.id === "egg" ? "piece" : "g");
   }
   return (
-    <Modal title="Добавить на полку" onClose={() => app.setModal(null)}>
-      {!food ? (
+    <Modal
+      title={creating ? "Новый продукт" : "Добавить на полку"}
+      onClose={() => app.setModal(null)}
+      onBack={() => {
+        if (creating) setCreating(false);
+        else if (food && !app.pantryFoodId) {
+          setFood(undefined);
+          setPicked(null);
+        } else if (app.pantryFoodId) app.setModal(null);
+        else app.setModal("add-pantry");
+      }}
+    >
+      {creating ? (
+        <CustomFoodForm
+          app={app}
+          initialName={query.trim()}
+          onCreated={(created) => {
+            setCreating(false);
+            choose(created);
+          }}
+        />
+      ) : !food ? (
         <section className="product-search">
           <label className="product-search-field">
             <Search size={19} />
@@ -81,9 +79,7 @@ function PantryForm({ app }: { app: AppController }) {
             />
           </label>
           <p className="product-search-caption">
-            {query.trim()
-              ? "Результаты поиска"
-              : "Типовые продукты — или начни вводить название"}
+            {query.trim() ? "Результаты поиска" : "Продукты"}
           </p>
           <div className="product-search-results">
             {local.map((f) => (
@@ -103,17 +99,7 @@ function PantryForm({ app }: { app: AppController }) {
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() =>
-                    choose(
-                      {
-                        id: p.id,
-                        name: [p.name, p.brand].filter(Boolean).join(" · "),
-                        emoji: "",
-                        per100: p.per100,
-                      },
-                      p,
-                    )
-                  }
+                  onClick={() => choose(catalogFood(p), p)}
                 >
                   <FoodArt foodId={p.id} name={p.name} />
                   <span>
@@ -144,11 +130,11 @@ function PantryForm({ app }: { app: AppController }) {
           <button
             type="button"
             className="text-button pantry-new-food"
-            onClick={() => app.setModal("catalog")}
+            onClick={() => setCreating(true)}
           >
             Не нашёл продукт? Добавить новый
           </button>
-          {!!remote.length && (
+          {remote.some((p) => p.source.url.includes("openfoodfacts.org")) && (
             <a
               className="catalog-attribution"
               href="https://world.openfoodfacts.org/"
@@ -191,23 +177,12 @@ function PantryForm({ app }: { app: AppController }) {
                   },
                 ],
               });
-              app.setModal(null);
+              app.finishAddingProducts();
             } catch (err) {
               setError((err as Error).message);
             }
           }}
         >
-          <button
-            type="button"
-            className="text-button product-change"
-            onClick={() => {
-              setFood(undefined);
-              setPicked(null);
-            }}
-          >
-            <ArrowLeft size={15} />
-            Другой продукт
-          </button>
           <div className="selected-product">
             <FoodArt foodId={food.id} name={food.name} />
             <div>
@@ -217,22 +192,11 @@ function PantryForm({ app }: { app: AppController }) {
             <Check size={19} />
           </div>
           {picked && (
-            <div className="catalog-confirm">
-              <p>
-                {picked.barcode} · {picked.basis}
-              </p>
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  checked={confirmed}
-                  onChange={(e) => setConfirmed(e.target.checked)}
-                />
-                Упаковка совпадает, значения указаны на 100 г
-              </label>
-              <a href={picked.source.url} target="_blank" rel="noreferrer">
-                Open Food Facts · ODbL-1.0 · проверить источник
-              </a>
-            </div>
+            <CatalogConfirmation
+              picked={picked}
+              confirmed={confirmed}
+              setConfirmed={setConfirmed}
+            />
           )}
           <label htmlFor="pantry-quantity">Сколько добавим?</label>
           <div className="intake-amount-control">
@@ -273,6 +237,30 @@ function PantryForm({ app }: { app: AppController }) {
               ))}
             </Select>
           </div>
+          <div
+            className="quantity-presets"
+            aria-label="Быстро указать количество"
+          >
+            {(measure.id === "g" ? [200, 400, 500] : [1, 2, 6]).map((n) => (
+              <button
+                key={n}
+                type="button"
+                aria-pressed={quantity === String(n)}
+                onClick={() => setQuantity(String(n))}
+              >
+                {n} {measure.label}
+              </button>
+            ))}
+          </div>
+          {measure.approximate && quantity && (
+            <p className="intake-measure-note">
+              ≈{" "}
+              {Math.round(Number(quantity) * measure.grams).toLocaleString(
+                "ru",
+              )}{" "}
+              г
+            </p>
+          )}
           {error && (
             <p className="notice error" role="alert">
               {error}

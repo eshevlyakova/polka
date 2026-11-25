@@ -60,7 +60,7 @@ async function request(path: string, method = "GET", body?: unknown) {
   } catch (error) {
     if (error instanceof AccountApiError) throw error;
     throw new AccountApiError(
-      "Не удалось связаться с сервером. Проверь интернет и повтори сохранение.",
+      "Не удалось связаться с Полкой. Проверь интернет и попробуй ещё раз.",
       0,
     );
   } finally {

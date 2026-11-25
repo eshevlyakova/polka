@@ -1,4 +1,5 @@
 import { AiError } from "../../../../shared/aiRecipes";
+import type { AiCredentials } from "./config";
 export class ProviderError extends AiError {
   constructor(
     message: string,
@@ -10,16 +11,49 @@ export class ProviderError extends AiError {
   }
 }
 /** Never return provider message bodies, headers, keys or images to the client. */
-export async function providerError(response: Response, vision: boolean) {
+export async function providerError(
+  response: Response,
+  vision: boolean,
+  timeweb = false,
+) {
   const data = (await response.json().catch(() => null)) as {
     error?: { code?: unknown };
   } | null;
   const code = String(data?.error?.code ?? "");
   const service = vision ? "Распознавание чека" : "Подбор рецептов";
   const unavailable = vision ? "недоступно" : "недоступен";
+  if (timeweb) {
+    if ([401, 403, 404].includes(response.status))
+      return new ProviderError(
+        `${service} сейчас ${unavailable}. Попробуй позже.`,
+        503,
+        "provider_access",
+      );
+    if (
+      response.status === 402 ||
+      /quota|balance|credit|billing|insufficient/i.test(code)
+    )
+      return new ProviderError(
+        `${service} сейчас ${unavailable}. Попробуй позже.`,
+        429,
+        "provider_quota",
+      );
+    if (response.status === 429 || response.status >= 500)
+      return new ProviderError(
+        `${service} сейчас ${unavailable}. Попробуй немного позже.`,
+        429,
+        "provider_overloaded",
+        true,
+      );
+    return new ProviderError(
+      `${service} ${vision ? "не удалось" : "не удался"}. Попробуй позже.`,
+      502,
+      "provider_request",
+    );
+  }
   if (code === "1113")
     return new ProviderError(
-      `${service} ${unavailable} для этого ключа Z.ai. Нужно проверить доступ к бесплатной модели.`,
+      `${service} сейчас ${unavailable}. Попробуй позже.`,
       503,
       "provider_access",
     );
@@ -37,7 +71,7 @@ export async function providerError(response: Response, vision: boolean) {
     ].includes(code)
   )
     return new ProviderError(
-      `${service} временно ${unavailable}: достигнут лимит Z.ai. Попробуй позже.`,
+      `${service} сейчас ${unavailable}. Попробуй позже.`,
       429,
       "provider_quota",
     );
@@ -53,7 +87,7 @@ export async function providerError(response: Response, vision: boolean) {
     ["1211", "1220", "1221", "1311", "1315"].includes(code)
   )
     return new ProviderError(
-      `${service} ${unavailable}: серверу не разрешён доступ к модели. Нужно проверить подключение Z.ai.`,
+      `${service} сейчас ${unavailable}. Попробуй позже.`,
       503,
       "provider_access",
     );
@@ -89,30 +123,42 @@ export function pause(ms: number, signal?: AbortSignal) {
 }
 export async function completion(
   body: Record<string, unknown>,
-  key: string,
+  key: AiCredentials,
   vision: boolean,
   fetcher: typeof fetch,
   signal?: AbortSignal,
   retry = true,
   timeoutMs = vision ? 65000 : 55000,
 ): Promise<string> {
+  const timeweb = typeof key !== "string";
+  const token = typeof key === "string" ? key : key.key;
+  const payload = { ...body };
+  if (typeof key !== "string") {
+    const model = vision ? key.visionModel : key.textModel;
+    payload.model = model;
+    // DeepSeek supports this toggle; Gemini does not accept the GLM parameter.
+    delete payload.thinking;
+    if (model.startsWith("deepseek/")) payload.thinking = { type: "disabled" };
+  }
   const deadline = AbortSignal.timeout(timeoutMs);
   const combined = signal ? AbortSignal.any([signal, deadline]) : deadline;
   for (let attempt = 0; attempt < (retry ? 2 : 1); attempt++) {
     try {
       const response = await fetcher(
-        "https://api.z.ai/api/paas/v4/chat/completions",
+        timeweb
+          ? "https://api.timeweb.ai/v1/chat/completions"
+          : "https://api.z.ai/api/paas/v4/chat/completions",
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${key}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify(payload),
           signal: combined,
         },
       );
-      if (!response.ok) throw await providerError(response, vision);
+      if (!response.ok) throw await providerError(response, vision, timeweb);
       const data = (await response.json()) as {
         choices?: { finish_reason?: string; message?: { content?: unknown } }[];
       };

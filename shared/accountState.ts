@@ -103,6 +103,9 @@ export function parseAccountState(value: unknown): AppState {
       settings: s.settings,
       ...(s.profile === undefined ? {} : { profile: s.profile }),
       ...(s.aiRecipes === undefined ? {} : { aiRecipes: s.aiRecipes }),
+      ...(s.recipeFeedback === undefined
+        ? {}
+        : { recipeFeedback: s.recipeFeedback }),
     };
   } catch {
     throw new Error(

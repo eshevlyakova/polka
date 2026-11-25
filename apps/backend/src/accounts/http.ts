@@ -70,13 +70,15 @@ export async function accountRequest(
       "application/json"
   )
     return json({ error: "Нужен JSON-запрос." }, 415);
+  if (url.pathname === "/api/me" && !tokenFrom(request))
+    return json({ error: "Открой Полку через Telegram." }, 401);
   if (!env.DATABASE_URL)
-    return json({ error: "Хранилище аккаунтов ещё не настроено." }, 503);
+    return json({ error: "Аккаунт сейчас недоступен. Попробуй войти чуть позже." }, 503);
   try {
     const repository = new AccountRepository(databasePool(env.DATABASE_URL));
     if (url.pathname === "/api/auth/telegram") {
       if (!env.BOT_TOKEN)
-        return json({ error: "Вход через Telegram ещё не настроен." }, 503);
+        return json({ error: "Сейчас не получается войти через Telegram. Попробуй чуть позже." }, 503);
       const raw = await request.text();
       if (raw.length > 12000)
         return json({ error: "Слишком большой запрос." }, 413);

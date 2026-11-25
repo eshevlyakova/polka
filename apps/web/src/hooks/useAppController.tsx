@@ -11,6 +11,15 @@ import { useRecipeLibrary } from "./useRecipeLibrary";
 import type { LibraryCard } from "../../../../shared/recipeLibrary";
 import { recipePriority } from "../domain/recipePriority";
 import { RecipeArt } from "../components/FoodArt";
+import { RecipeRating } from "../components/RecipeRating";
+import {
+  hasRecipeRating,
+  rateRecipe,
+  tasteScore,
+  type TasteRecipe,
+} from "../../../../shared/recipePreferences";
+import { recipeFeatures } from "../domain/personalIdeas";
+import type { RecipeFeedback } from "../../../../shared/model";
 import { useMemo, useState, useRef, useEffect, type FormEvent } from "react";
 import { foods, recipes } from "../data/catalog";
 import type { IntakeSource } from "../domain/intake";
@@ -20,7 +29,6 @@ import { usePolkaState } from "../hooks/usePolkaState";
 import { telegram } from "../telegram";
 type Tab = "home" | "pantry" | "diary" | "profile";
 export function useAppController() {
-  const library = useRecipeLibrary();
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryRecipeId, setLibraryRecipeId] = useState<string | null>(null);
   const libraryScroll = useRef(0);
@@ -31,7 +39,7 @@ export function useAppController() {
     window.history.pushState({ polkaLibrary: true }, "", "#recipes");
     window.scrollTo?.(0, 0);
   }
-  function openLibraryRecipe(recipe: LibraryCard) {
+  function openLibraryRecipe(recipe: Pick<LibraryCard, "id">) {
     libraryScroll.current = window.scrollY;
     setLibraryRecipeId(recipe.id);
     window.history.pushState(
@@ -65,6 +73,9 @@ export function useAppController() {
     saveError,
     retrySave,
   } = usePolkaState();
+  const library = useRecipeLibrary(
+    state.recipeFeedback?.map((f) => f.recipeId),
+  );
   const [tab, setTabState] = useState<Tab>("home");
   const history = useRef<Tab[]>([]);
   function setTab(next: Tab) {
@@ -75,10 +86,10 @@ export function useAppController() {
   }
   const [modal, setModal] = useState<
     | "food"
-    | "catalog"
     | "pantry"
     | "add-pantry"
     | "receipt"
+    | "voice"
     | "own"
     | "profile"
     | "weight"
@@ -90,6 +101,8 @@ export function useAppController() {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   function goBack() {
     if (saving || saveError) return;
+    const dialog = Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).at(-1);
+    if (dialog) { dialog.dispatchEvent(new Event("polka:back")); return; }
     if (editingPantryId) {
       setEditingPantryId(null);
       return;
@@ -114,7 +127,12 @@ export function useAppController() {
   }
   useEffect(() => {
     const button = telegram?.BackButton;
-    if (!button) return;
+    if (
+      !button ||
+      !telegram?.initData ||
+      telegram.isVersionAtLeast?.("6.1") === false
+    )
+      return;
     if (
       modal ||
       selected ||
@@ -187,6 +205,81 @@ export function useAppController() {
   }
   const [diaryDate, setDiaryDate] = useState(localDate());
   const [message, setMessage] = useState("");
+  const [lastRating, setLastRating] = useState<{
+    id: string;
+    previous?: RecipeFeedback;
+    rating: RecipeFeedback["rating"];
+  } | null>(null);
+  const ratingPending = useRef(false);
+  function saveRecipeRating(
+    recipe: TasteRecipe,
+    rating: RecipeFeedback["rating"],
+  ) {
+    if (ratingPending.current) return;
+    ratingPending.current = true;
+    void run(async () => {
+      try {
+        const previous = state.recipeFeedback?.find(
+          (f) => f.recipeId === recipe.id,
+        );
+        await commit(
+          rateRecipe(state, recipe, rating, new Date().toISOString()),
+        );
+        setLastRating({ id: recipe.id, previous, rating });
+      } finally {
+        ratingPending.current = false;
+      }
+    });
+  }
+  function rateLibraryRecipe(
+    recipe: LibraryCard,
+    rating: RecipeFeedback["rating"],
+  ) {
+    saveRecipeRating(
+      { ...recipe, ingredients: recipe.ingredients.map((i) => i.name) },
+      rating,
+    );
+  }
+  function removeRecipeRating(id: string, previous?: RecipeFeedback) {
+    void run(async () => {
+      await commit({
+        ...state,
+        recipeFeedback: [
+          ...(state.recipeFeedback ?? []).filter((f) => f.recipeId !== id),
+          ...(previous ? [previous] : []),
+        ],
+      });
+      setLastRating(null);
+    });
+  }
+  function openRatedRecipe(id: string) {
+    const recipe = [...recipes, ...(state.aiRecipes ?? [])].find(
+      (r) => r.id === id,
+    );
+    if (recipe) openRecipe(recipe);
+    else if (/^(ut-|rf-)/.test(id)) openLibraryRecipe({ id });
+    else
+      setMessage(
+        "Этот адаптированный рецепт больше не сохранён. Оценку можно убрать.",
+      );
+  }
+  function finishAddingProducts() {
+    setModal(null);
+    setError("");
+    if (!state.pantry.some((item) => item.grams > 1e-6)) {
+      setSelected(null);
+      setLibraryOpen(false);
+      setLibraryRecipeId(null);
+      setRecipeFoodId(null);
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
+      setTab("home");
+      setMessage("Продукты уже на полке. Теперь подберём, что приготовить.");
+    } else setMessage("Продукты добавлены на полку.");
+  }
   const catalog = useMemo(
     () => [...foods, ...state.customFoods],
     [state.customFoods],
@@ -283,6 +376,8 @@ export function useAppController() {
       (a, b) =>
         Number(b.ingredients.every((i) => available(i.foodId) >= i.grams)) -
           Number(a.ingredients.every((i) => available(i.foodId) >= i.grams)) ||
+        tasteScore(recipeFeatures(b, catalog), state) -
+          tasteScore(recipeFeatures(a, catalog), state) ||
         recipePriority(b.ingredients, state.pantry, catalog) -
           recipePriority(a.ingredients, state.pantry, catalog) ||
         b.ingredients.filter((i) => available(i.foodId) >= i.grams).length -
@@ -300,6 +395,12 @@ export function useAppController() {
   }
 
   return {
+    lastRating,
+    setLastRating,
+    removeRecipeRating,
+    rateLibraryRecipe,
+    openRatedRecipe,
+    isRecipeRated: (id: string) => hasRecipeRating(state, id),
     library,
     libraryOpen,
     libraryRecipeId,
@@ -307,6 +408,7 @@ export function useAppController() {
     openLibraryRecipe,
     closeLibrary,
     finishCooking,
+    finishAddingProducts,
     state,
     setState,
     error,
@@ -360,70 +462,85 @@ export function useAppController() {
     pantryFoodId,
     openPantry,
   };
-  function recipeCard(r: Recipe) {
+  function recipeCard(r: Recipe, leaving = false) {
+    if (hasRecipeRating(state, r.id) && !leaving) return null;
     const missing = shortages(r.ingredients, state.pantry, catalog);
     return (
-      <button
-        className="card recipe-card"
+      <article
+        className={`rated-recipe-card ${leaving ? "is-dismissing" : ""}`}
         key={r.id}
-        onClick={() => openRecipe(r)}
+        inert={leaving || undefined}
+        aria-hidden={leaving || undefined}
       >
-        {r.source === "ai" ? (
-          <div className="ai-recipe-label">
-            <Sparkles size={17} />
-            Для тебя
-          </div>
-        ) : (
-          <div className="recipe-art">
-            <RecipeArt recipeId={r.id} />
-            <span className="recipe-time">
-              <Clock3 size={14} />
-              {r.minutes} мин
-            </span>
-          </div>
-        )}
-        <div className="recipe-content">
-          <h3>{r.name}</h3>
-          <p>
-            {r.source === "ai" ? `${r.minutes} мин · ` : ""}
-            {Math.round(
-              calculate(r.ingredients, catalog).kcal / r.servings,
-            )}{" "}
-            ккал / порция
-          </p>
-          <span
-            className={`badge recipe-availability ${missing.length ? "needs-products" : ""}`}
-          >
-            {missing.length ? (
-              <ShoppingBasket size={14} />
-            ) : (
-              <CheckCircle2 size={14} />
-            )}
-            {missing.length
-              ? missing.length === 1
-                ? "Не всё есть на полке"
-                : `Не хватает ${missing.length} продуктов`
-              : "Всё есть на полке"}
-          </span>
-          {!!missing.length && (
-            <div
-              className="recipe-missing-list"
-              aria-label="Недостающие продукты"
-            >
-              {missing.slice(0, 3).map((i) => (
-                <span key={i.foodId}>{i.name}</span>
-              ))}
-              {missing.length > 3 && <span>ещё {missing.length - 3}</span>}
+        <button
+          className="card recipe-card"
+          key={r.id}
+          onClick={() => openRecipe(r)}
+        >
+          {r.source === "ai" ? (
+            <div className="ai-recipe-label">
+              <Sparkles size={17} />
+              Для тебя
+            </div>
+          ) : (
+            <div className="recipe-art">
+              <RecipeArt recipeId={r.id} />
+              <span className="recipe-time">
+                <Clock3 size={14} />
+                {r.minutes} мин
+              </span>
             </div>
           )}
-          <span className="recipe-action">
-            Посмотреть рецепт{" "}
-            <span>
-              <ArrowUpRight size={20} />
+          <div className="recipe-content">
+            <h3>{r.name}</h3>
+            <p>
+              {r.source === "ai" ? `${r.minutes} мин · ` : ""}
+              {Math.round(
+                calculate(r.ingredients, catalog).kcal / r.servings,
+              )}{" "}
+              ккал / порция
+            </p>
+            <span
+              className={`badge recipe-availability ${missing.length ? "needs-products" : ""}`}
+            >
+              {missing.length ? (
+                <ShoppingBasket size={14} />
+              ) : (
+                <CheckCircle2 size={14} />
+              )}
+              {missing.length
+                ? missing.length === 1
+                  ? "Не всё есть на полке"
+                  : `Не хватает ${missing.length} продуктов`
+                : "Всё есть на полке"}
             </span>
-          </span>
-        </div>
-      </button>
+            {!!missing.length && (
+              <div
+                className="recipe-missing-list"
+                aria-label="Недостающие продукты"
+              >
+                {missing.slice(0, 3).map((i) => (
+                  <span key={i.foodId}>{i.name}</span>
+                ))}
+                {missing.length > 3 && <span>ещё {missing.length - 3}</span>}
+              </div>
+            )}
+            <span className="recipe-action">
+              Посмотреть рецепт{" "}
+              <span>
+                <ArrowUpRight size={20} />
+              </span>
+            </span>
+          </div>
+        </button>
+        <RecipeRating
+          name={r.name}
+          disabled={saving}
+          onRate={(rating) =>
+            saveRecipeRating(recipeFeatures(r, catalog), rating)
+          }
+        />
+      </article>
     );
   }
   function recordBatch(id: string) {

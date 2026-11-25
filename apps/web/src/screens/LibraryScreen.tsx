@@ -1,3 +1,4 @@
+import { useRecipePresence } from "../hooks/useRecipePresence";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -68,6 +69,10 @@ export function LibraryScreen({ app }: { app: AppController }) {
     if (maxMinutes !== (request?.maxMinutes ?? 0)) change({ maxMinutes });
   }
   const page = library.page;
+  const visibleCards = useRecipePresence(
+    page?.items.filter((r) => !app.isRecipeRated(r.id)) ?? [],
+    app.isRecipeRated,
+  );
   const filtered = Boolean(
     request?.query ||
     request?.maxMinutes ||
@@ -247,11 +252,14 @@ export function LibraryScreen({ app }: { app: AppController }) {
       {page && (
         <>
           <div className="library-grid">
-            {page.items.map((r) => (
+            {visibleCards.map(({ item: r, leaving }) => (
               <LibraryRecipeCard
                 key={r.id}
                 recipe={r}
+                leaving={leaving}
                 onOpen={app.openLibraryRecipe}
+                disabled={app.saving}
+                onRate={(rating) => app.rateLibraryRecipe(r, rating)}
               />
             ))}
           </div>

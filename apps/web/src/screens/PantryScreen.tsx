@@ -42,7 +42,7 @@ export function PantryScreen({ app }: { app: AppController }) {
               aria-pressed={pantrySection === "products"}
               onClick={() => setPantrySection("products")}
             >
-              Продукты<span>{state.pantry.length}</span>
+              Продукты<span>{visible.length}</span>
             </button>
             <button
               aria-pressed={pantrySection === "prepared"}
@@ -77,7 +77,22 @@ export function PantryScreen({ app }: { app: AppController }) {
                       >
                         {p.label || foodName(p.foodId)}
                       </button>
-                      <p>{p.grams} г</p>
+                      <div className="pantry-product-tags">
+                        <p>
+                          {p.grams.toLocaleString("ru", {
+                            maximumFractionDigits: 1,
+                          })}{" "}
+                          г
+                        </p>
+                        <button
+                          className="pantry-recipes-button"
+                          onClick={() => openFoodRecipes(p.foodId)}
+                          aria-label={`Рецепты с продуктом: ${foodName(p.foodId)}`}
+                        >
+                          <ChefHat size={14} />
+                          Рецепты
+                        </button>
+                      </div>
                     </div>
                     <div className="pantry-item-actions">
                       <button
@@ -100,16 +115,6 @@ export function PantryScreen({ app }: { app: AppController }) {
                         }
                       >
                         <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div className="pantry-product-tags">
-                      <button
-                        className="pantry-recipes-button"
-                        onClick={() => openFoodRecipes(p.foodId)}
-                        aria-label={`Рецепты с продуктом: ${foodName(p.foodId)}`}
-                      >
-                        <ChefHat size={14} />
-                        Рецепты
                       </button>
                     </div>
                   </article>

@@ -41,7 +41,7 @@ function Probe() {
     <div data-testid="ready">
       {session?.mode === "account"
         ? `${session.user.displayName}: ${session.repository.snapshot.state.pantry.length}`
-        : "Демо"}
+        : ""}
     </div>
   );
 }
@@ -77,25 +77,33 @@ it("opens a verified fresh account without seeding demo data, including React St
   expect(localStorage.length).toBe(0);
 });
 it("requires explicit confirmation to transfer a local save and retains the original copy", async () => {
-  const raw = JSON.stringify(createDemoState());
+  const old = emptyState();
+  old.pantry = [
+    { id: "legacy-eggs", foodId: "egg", grams: 200, expiresOn: "" },
+  ];
+  const raw = JSON.stringify(old);
   localStorage.setItem("polka:v1:browser", raw);
   render(
     <AccountGate>
       <Probe />
     </AccountGate>,
   );
-  expect(await screen.findByText("Демонстрационные записи")).toBeTruthy();
+  expect(await screen.findByText("Записи из браузера")).toBeTruthy();
   expect(saveAccountState).not.toHaveBeenCalled();
   expect(screen.queryByTestId("ready")).toBeNull();
   fireEvent.click(
     screen.getByRole("button", { name: "Перенести в мой аккаунт" }),
   );
-  expect((await screen.findByTestId("ready")).textContent).toBe("Анна: 11");
+  expect((await screen.findByTestId("ready")).textContent).toBe("Анна: 1");
   expect(saveAccountState).toHaveBeenCalledTimes(1);
   expect(localStorage.getItem("polka:v1:browser")).toBe(raw);
 });
 it("can decline transfer without deleting old data or uploading it", async () => {
-  const raw = JSON.stringify(createDemoState());
+  const old = emptyState();
+  old.pantry = [
+    { id: "legacy-eggs", foodId: "egg", grams: 200, expiresOn: "" },
+  ];
+  const raw = JSON.stringify(old);
   localStorage.setItem("polka:v1:browser", raw);
   render(
     <AccountGate>
@@ -119,8 +127,47 @@ it("never turns an account/network failure into a successful demo sign-in", asyn
   expect(await screen.findByText("Сервер недоступен")).toBeTruthy();
   expect(screen.queryByTestId("ready")).toBeNull();
   expect(loadAccountState).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Посмотреть демо" }));
-  await waitFor(() =>
-    expect(screen.getByTestId("ready").textContent).toBe("Демо"),
+  expect(screen.queryByRole("button", { name: "Посмотреть демо" })).toBeNull();
+  expect(
+    screen.getByRole("link", { name: "Открыть Полку в Telegram" }),
+  ).toBeTruthy();
+});
+
+it("skips old demo records on Telegram entry without deleting them or asking a new user to import them", async () => {
+  const raw = JSON.stringify(createDemoState());
+  localStorage.setItem("polka:v1:browser", raw);
+  render(
+    <AccountGate>
+      <Probe />
+    </AccountGate>,
   );
+  expect((await screen.findByTestId("ready")).textContent).toBe("Анна: 0");
+  expect(screen.queryByText("Демонстрационные записи")).toBeNull();
+  expect(saveAccountState).not.toHaveBeenCalled();
+  expect(localStorage.getItem("polka:v1:browser")).toBe(raw);
+});
+
+it("offers one Telegram entry to a browser visitor without a session", async () => {
+  const { telegram } = await import("../apps/web/src/telegram");
+  const { AccountApiError } = await import("../apps/web/src/api/account");
+  const original = telegram!.initData;
+  try {
+    telegram!.initData = "";
+    vi.mocked(signIn).mockRejectedValue(
+      new AccountApiError("Требуется вход", 401),
+    );
+    render(
+      <AccountGate>
+        <Probe />
+      </AccountGate>,
+    );
+    expect(
+      await screen.findByRole("link", { name: "Открыть Полку в Telegram" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByTestId("ready")).toBeNull();
+  } finally {
+    telegram!.initData = original;
+  }
 });

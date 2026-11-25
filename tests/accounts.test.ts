@@ -2,17 +2,19 @@ import { it, expect } from "vitest";
 import { handleRequest } from "../apps/backend/src/router";
 it("keeps account routes closed when storage is not configured, without breaking the public catalogue", async () => {
   const response = await handleRequest(
-    new Request("https://polka.test/api/me"),
+    new Request("https://polka.test/api/me", {
+      headers: { Authorization: "Bearer " + "a".repeat(43) },
+    }),
     {},
   );
   expect(response.status).toBe(503);
-  expect((await response.json()).error).toContain("не настроено");
+  expect((await response.json()).error).toContain("Аккаунт сейчас недоступен");
   const health = await handleRequest(
     new Request("https://polka.test/api/health"),
     {},
   );
   expect(health.status).toBe(200);
-  expect((await health.json()).libraryRecipes).toBe(501);
+  expect((await health.json()).libraryRecipes).toBe(3000);
 });
 it("rejects browser cross-origin account writes and form posts before accessing storage", async () => {
   const foreign = await handleRequest(

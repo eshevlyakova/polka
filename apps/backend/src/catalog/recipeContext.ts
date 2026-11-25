@@ -24,8 +24,11 @@ export function adaptationReferences(request: AiRecipeRequest) {
     ],
   };
   const exact = searchLibrary(input);
-  const candidates = exact.total
-    ? exact.items
+  // A source without timing may still be adapted and timed by the model.
+  // Strict time-filtered catalogue results themselves never invent a duration.
+  const untimed = exact.total ? exact : searchLibrary({ ...input, maxMinutes: 0 });
+  const candidates = untimed.total
+    ? untimed.items
     : searchLibrary({ ...input, query: "" }).items;
   return candidates
     .filter(

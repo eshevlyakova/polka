@@ -7,31 +7,36 @@ import {
 import { handleRequest } from "../apps/backend/src/router";
 import { generateRecipes } from "../apps/backend/src/ai/provider";
 import { parseAiRequest } from "../shared/aiRecipes";
-it("imports 501 distinct Russian recipes with original quantities and attribution", () => {
-  expect(recipeLibrary).toHaveLength(501);
-  expect(new Set(recipeLibrary.map((r) => r.id)).size).toBe(501);
+it("imports 3000 distinct Russian recipes and keeps missing source metadata explicit", () => {
+  expect(recipeLibrary).toHaveLength(3000);
+  expect(new Set(recipeLibrary.map((r) => r.id)).size).toBe(3000);
   for (const r of recipeLibrary) {
     expect(r.name).toMatch(/[а-яё]/i);
     expect(r.ingredients.length).toBeGreaterThan(0);
     expect(r.steps.length).toBeGreaterThan(0);
-    expect(r.origin.license).toBe("CC BY-SA 4.0");
+    expect(r.origin.license).toMatch(/CC BY-(?:SA|NC) 4.0/);
+    if (r.id.startsWith("rf-")) {
+      expect(r.minutes).toBeNull();
+      expect(r.servings).toBeNull();
+      expect(r.perServing).toBeNull();
+      continue;
+    }
     expect(
-      Object.values(r.perServing).every((n) => Number.isFinite(n) && n >= 0),
+      Object.values(r.perServing!).every((n) => Number.isFinite(n) && n >= 0),
     ).toBe(true);
   }
 });
 it("paginates every matching record without a three/six-result cap or duplicates", () => {
   const input = parseLibrarySearch({ query: "", limit: 24, sort: "quick" });
-  const ids: string[] = [];
-  for (let offset = 0; offset < 501; offset += 24) {
+  const all = searchLibrary({ ...input, limit: recipeLibrary.length });
+  expect(all.total).toBe(3000);
+  expect(new Set(all.items.map((r) => r.id)).size).toBe(3000);
+  for (const offset of [0, 24, 1488, 2976]) {
     const page = searchLibrary({ ...input, offset });
-    expect(page.total).toBe(501);
-    expect(page.items.length).toBeLessThanOrEqual(24);
-    ids.push(...page.items.map((r) => r.id));
+    expect(page.total).toBe(3000);
+    expect(page.items.map((r) => r.id)).toEqual(all.items.slice(offset, offset + 24).map((r) => r.id));
   }
-  expect(ids).toHaveLength(501);
-  expect(new Set(ids).size).toBe(501);
-  expect(searchLibrary({ ...input, offset: 504 }).items).toEqual([]);
+  expect(searchLibrary({ ...input, offset: 3024 }).items).toEqual([]);
 });
 it("matches cottage breakfast wishes, time, categories, exclusions and sorting", () => {
   const cottage = searchLibrary(
@@ -42,7 +47,7 @@ it("matches cottage breakfast wishes, time, categories, exclusions and sorting",
     cottage.items.every(
       (r) =>
         r.category === "breakfast" &&
-        r.minutes <= 60 &&
+        r.minutes !== null && r.minutes <= 60 &&
         r.ingredients.some((i) => i.name.toLowerCase().includes("творог")),
     ),
   ).toBe(true);
@@ -64,7 +69,7 @@ it("matches cottage breakfast wishes, time, categories, exclusions and sorting",
   const quick = searchLibrary(parseLibrarySearch({ sort: "quick" }));
   expect(
     quick.items.every(
-      (r, i) => i === 0 || r.minutes >= quick.items[i - 1].minutes,
+      (r, i) => i === 0 || (r.minutes ?? Infinity) >= (quick.items[i - 1].minutes ?? Infinity),
     ),
   ).toBe(true);
   for (const patch of [

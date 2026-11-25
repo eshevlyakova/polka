@@ -4,7 +4,7 @@ import {
   libraryCategories,
   normalizeRecipeText,
   recipeWords,
-  type LibraryRecipe,
+  type LibraryMetadata,
   type LibrarySearch,
   type LibraryPage,
 } from "./recipeLibrary";
@@ -21,7 +21,13 @@ export function parseLibrarySearch(value: unknown): LibrarySearch {
     limit = d.limit ?? 12,
     products = d.products ?? [];
   const requiredIngredients = d.requiredIngredients ?? [];
+  const excludedRecipeIds = d.excludedRecipeIds ?? [];
   if (
+    !Array.isArray(excludedRecipeIds) ||
+    excludedRecipeIds.length > 3000 ||
+    !excludedRecipeIds.every(
+      (id) => typeof id === "string" && id.length > 0 && id.length <= 160,
+    ) ||
     typeof query !== "string" ||
     query.length > 600 ||
     typeof exclusions !== "string" ||
@@ -64,6 +70,7 @@ export function parseLibrarySearch(value: unknown): LibrarySearch {
     limit,
     products,
     requiredIngredients,
+    ...(excludedRecipeIds.length ? { excludedRecipeIds } : {}),
   };
 }
 const ignored = new Set(
@@ -79,9 +86,10 @@ const matchWord = (word: string, body: string[]) =>
         (w.startsWith(word) || word.startsWith(w))),
   );
 export function searchLibrary(
-  recipeLibrary: LibraryRecipe[],
+  recipeLibrary: (LibraryMetadata & { steps?: string[] })[],
   input: LibrarySearch,
 ): LibraryPage {
+  const excludedIds = new Set(input.excludedRecipeIds ?? []);
   const normalized = normalizeRecipeText(input.query);
   const negatives = [
     ...normalized.matchAll(/(?:^|\s)без\s+([^,.!?;]+)/gu),
@@ -150,7 +158,8 @@ export function searchLibrary(
           (matches.length / recipe.ingredients.length) * 5 +
           agePriority / 10,
         valid:
-          (!input.maxMinutes || recipe.minutes <= input.maxMinutes) &&
+          !excludedIds.has(recipe.id) &&
+          (!input.maxMinutes || (recipe.minutes !== null && recipe.minutes <= input.maxMinutes)) &&
           (input.category === "all" || recipe.category === input.category) &&
           (category === "all" || recipe.category === category) &&
           (!lunch ||
@@ -170,13 +179,13 @@ export function searchLibrary(
     .filter((r) => r.valid)
     .sort((a, b) =>
       input.sort === "quick"
-        ? a.recipe.minutes - b.recipe.minutes ||
+        ? (a.recipe.minutes ?? Infinity) - (b.recipe.minutes ?? Infinity) ||
           a.recipe.id.localeCompare(b.recipe.id)
         : input.sort === "calories"
-          ? a.recipe.perServing.kcal - b.recipe.perServing.kcal ||
+          ? (a.recipe.perServing?.kcal ?? Infinity) - (b.recipe.perServing?.kcal ?? Infinity) ||
             a.recipe.id.localeCompare(b.recipe.id)
           : b.score - a.score ||
-            a.recipe.minutes - b.recipe.minutes ||
+            (a.recipe.minutes ?? Infinity) - (b.recipe.minutes ?? Infinity) ||
             a.recipe.id.localeCompare(b.recipe.id),
     );
   return {

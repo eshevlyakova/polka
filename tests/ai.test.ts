@@ -152,7 +152,7 @@ it("requires authorization outside local development and rejects unauthorized or
       await handleAiRequest(request(), {
         API_GLM: "test-secret",
         ALLOWED_ORIGIN: "https://front.test",
-        AI_TEST_CODE: "code",
+        BOT_TOKEN: "test-bot",
       })
     ).status,
   ).toBe(401);

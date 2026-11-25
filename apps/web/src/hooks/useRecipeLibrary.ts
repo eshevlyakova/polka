@@ -4,7 +4,7 @@ import type {
   LibraryPage,
 } from "../../../../shared/recipeLibrary";
 import { fetchLibraryPage } from "../api/recipeLibrary";
-export function useRecipeLibrary() {
+export function useRecipeLibrary(excludedIds: string[] = []) {
   const [request, setRequest] = useState<LibrarySearch | null>(null);
   const [page, setPage] = useState<LibraryPage | null>(null);
   const [busy, setBusy] = useState(false),
@@ -13,6 +13,10 @@ export function useRecipeLibrary() {
     sequence = useRef(0);
   useEffect(() => () => pending.current?.abort(), []);
   async function search(input: LibrarySearch, append = false) {
+    input = {
+      ...input,
+      excludedRecipeIds: append ? input.excludedRecipeIds : excludedIds,
+    };
     pending.current?.abort();
     const version = ++sequence.current,
       controller = new AbortController();
@@ -66,5 +70,25 @@ export function useRecipeLibrary() {
     setPage(null);
     setError("");
   }
-  return { request, page, busy, error, setError, search, more, cancel, clear };
+  const removed =
+    page?.items.filter((r) => excludedIds.includes(r.id)).length ?? 0;
+  const visiblePage =
+    page && removed
+      ? {
+          ...page,
+          items: page.items.filter((r) => !excludedIds.includes(r.id)),
+          total: page.total - removed,
+        }
+      : page;
+  return {
+    request,
+    page: visiblePage,
+    busy,
+    error,
+    setError,
+    search,
+    more,
+    cancel,
+    clear,
+  };
 }

@@ -11,6 +11,7 @@ type TelegramApp = {
   expand(): void;
   setHeaderColor?(color: string): void;
   setBackgroundColor?(color: string): void;
+  isVersionAtLeast?(version: string): boolean;
 };
 declare global {
   interface Window {
@@ -19,10 +20,13 @@ declare global {
 }
 export const telegram = window.Telegram?.WebApp;
 export function initializeTelegram() {
+  if (!telegram?.initData) return;
   telegram?.ready();
   telegram?.expand();
-  telegram?.setHeaderColor?.("#faf7ef");
-  telegram?.setBackgroundColor?.("#faf7ef");
+  if (telegram.isVersionAtLeast?.("6.1") !== false) {
+    telegram.setHeaderColor?.("#fbf9f2");
+    telegram.setBackgroundColor?.("#fbf9f2");
+  }
 }
 // Unverified user id is used only to isolate local storage, never for server authorization.
 export const storageKey = `polka:v1:${telegram?.initDataUnsafe?.user?.id ?? "browser"}`;

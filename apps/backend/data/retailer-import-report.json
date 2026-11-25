@@ -1,0 +1,14 @@
+{
+  "retrievedAt": "2026-11-24",
+  "inputRecords": 17,
+  "acceptedProducts": 15,
+  "acceptedPackages": 16,
+  "rejected": [
+    {
+      "sourceId": "4217907",
+      "url": "https://5ka.ru/product/smetana-iskrenne-vash-15-bzmzh-300g--4217907/",
+      "reason": "energy and macronutrients disagree; check the label"
+    }
+  ],
+  "scope": "Bounded sample, not a complete assortment. No photos or marketing text copied."
+}

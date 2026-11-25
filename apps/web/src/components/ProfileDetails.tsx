@@ -7,6 +7,7 @@ export function ProfileDetails({ app }: { app: AppController }) {
   const profile = app.state.profile;
   const name =
     profile?.name ||
+    (app.session?.mode === "account" ? app.session.user.displayName : "") ||
     telegram?.initDataUnsafe?.user?.first_name?.trim() ||
     "Твой профиль";
   const age = profile?.age;
@@ -35,7 +36,22 @@ export function ProfileDetails({ app }: { app: AppController }) {
       <div className="profile-identity-top">
         <div className="profile-identity-copy">
           <h2 id="profile-details-title">О тебе</h2>
-          <p className="profile-display-name">{name}</p>
+          <p
+            className="profile-display-name"
+            data-long-name={name.length > 22 || undefined}
+            title={name}
+            aria-label={name}
+          >
+            {name
+              .trim()
+              .split(/\s+/)
+              .map((word, index) => (
+                <span key={index}>
+                  {index > 0 && " "}
+                  <span className="profile-name-word">{word}</span>
+                </span>
+              ))}
+          </p>
           {details && <p className="profile-personal-line">{details}</p>}
           <button
             className="text-button"

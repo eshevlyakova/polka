@@ -76,6 +76,7 @@ export type UserProfile = {
   targetWeightKg?: number;
 };
 export type AppState = {
+  recipeFeedback?: RecipeFeedback[];
   aiRecipes?: Recipe[];
   profile?: UserProfile;
   version: 1;
@@ -84,6 +85,15 @@ export type AppState = {
   diary: DiaryEntry[];
   customFoods: Food[];
   settings: Settings;
+};
+/** Taste signals contain recipe features, never shopping quantities. */
+export type RecipeFeedback = {
+  recipeId: string;
+  name: string;
+  ingredients: string[];
+  category: string;
+  rating: "like" | "dislike";
+  updatedAt: string;
 };
 export const emptyState = (): AppState => ({
   version: 1,

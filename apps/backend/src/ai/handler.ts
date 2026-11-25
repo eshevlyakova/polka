@@ -3,27 +3,29 @@ import { validateInitData } from "../../../../shared/telegramAuth";
 import { generateRecipes } from "./provider";
 import { interpretRecipeSearch } from "./search";
 import { sessionAccount } from "../accounts/http";
+import {
+  aiCredentials,
+  type AiCredentials,
+  type AiProviderEnv,
+} from "./config";
 
-export interface AiEnv {
+export interface AiEnv extends AiProviderEnv {
   DATABASE_URL?: string;
   API_GLM?: string;
   ALLOWED_ORIGIN?: string;
   BOT_TOKEN?: string;
-  AI_TEST_CODE?: string;
 }
 const visits = new Map<string, { count: number; reset: number }>();
-let active = false;
-function sameSecret(a: string, b: string) {
-  let difference = a.length ^ b.length;
-  for (let i = 0; i < Math.max(a.length, b.length); i++)
-    difference |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  return difference === 0;
-}
+const active = new Set<string>();
 export async function authorizedAiTask(
   request: Request,
   env: AiEnv,
   local: boolean,
-  task: (value: unknown, key: string, signal: AbortSignal) => Promise<unknown>,
+  task: (
+    value: unknown,
+    key: AiCredentials,
+    signal: AbortSignal,
+  ) => Promise<unknown>,
   maxBody = 24_000,
 ): Promise<Response> {
   const origin = request.headers.get("Origin");
@@ -42,53 +44,40 @@ export async function authorizedAiTask(
       status: 204,
       headers: {
         ...cors,
-        "Access-Control-Allow-Headers":
-          "Authorization, Content-Type, X-Polka-Test-Code",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
       },
     });
   if (request.method !== "POST")
     return json({ error: "Нужен POST-запрос." }, 405);
   try {
-    if (!env.API_GLM) throw new AiError("На сервере не настроен API_GLM.", 503);
+    const credentials = aiCredentials(env);
     let user = "local";
     if (!local) {
-      if (!env.BOT_TOKEN && !env.AI_TEST_CODE && !env.DATABASE_URL)
+      if (!env.BOT_TOKEN && !env.DATABASE_URL)
         throw new AiError(
-          "На сервере не настроен доступ к тестированию ИИ.",
+          "Не удалось проверить вход в Полку. Попробуй позже.",
           503,
         );
-      const code = request.headers.get("X-Polka-Test-Code") ?? "";
-      if (
-        env.AI_TEST_CODE &&
-        code.length <= 200 &&
-        sameSecret(code, env.AI_TEST_CODE)
-      )
-        user = "test-group";
-      else {
-        let account: Awaited<ReturnType<typeof sessionAccount>>;
-        try {
-          account = await sessionAccount(request, env);
-        } catch {
-          throw new AiError(
-            "Не удалось проверить аккаунт. Попробуй ещё раз.",
-            503,
-          );
+      let account: Awaited<ReturnType<typeof sessionAccount>>;
+      try {
+        account = await sessionAccount(request, env);
+      } catch {
+        throw new AiError(
+          "Не удалось проверить аккаунт. Попробуй ещё раз.",
+          503,
+        );
+      }
+      try {
+        if (account) user = `tg-${account.telegramId}`;
+        else {
+          const authorization = request.headers.get("Authorization") ?? "";
+          if (!env.BOT_TOKEN || !authorization.startsWith("tma "))
+            throw new Error();
+          user = `tg-${await validateInitData(authorization.slice(4), env.BOT_TOKEN)}`;
         }
-        try {
-          if (account) user = `tg-${account.telegramId}`;
-          else {
-            const authorization = request.headers.get("Authorization") ?? "";
-            if (!env.BOT_TOKEN || !authorization.startsWith("tma "))
-              throw new Error();
-            user = `tg-${await validateInitData(authorization.slice(4), env.BOT_TOKEN)}`;
-          }
-        } catch {
-          throw new AiError(
-            "Открой приложение через Telegram или введи код тестирования.",
-            401,
-          );
-        }
+      } catch {
+        throw new AiError("Открой Полку в Telegram, чтобы продолжить.", 401);
       }
     }
     const raw = await request.text();
@@ -106,26 +95,30 @@ export async function authorizedAiTask(
     const now = Date.now();
     for (const [key, visit] of visits)
       if (visit.reset < now) visits.delete(key);
-    const visit = visits.get(user) ?? { count: 0, reset: now + 600_000 };
-    if (active)
+    const voice = /\/ai\/(products|transcribe|speak)$/.test(
+      new URL(request.url).pathname,
+    );
+    const visitKey = `${user}:${voice ? "voice" : "recipes"}`;
+    const visit = visits.get(visitKey) ?? { count: 0, reset: now + 600_000 };
+    if (active.has(user))
       throw new AiError(
         "Уже выполняется запрос. Дождись его завершения или отмени его.",
         429,
         "request_in_progress",
       );
-    if (visit.count >= (local ? 20 : user === "test-group" ? 30 : 10))
+    if (visit.count >= (voice ? 60 : local ? 20 : 10))
       throw new AiError(
         `Слишком много попыток. Попробуй через ${Math.max(1, Math.ceil((visit.reset - now) / 60000))} мин.`,
         429,
         "app_rate_limit",
       );
     visit.count++;
-    visits.set(user, visit);
-    active = true;
+    visits.set(visitKey, visit);
+    active.add(user);
     try {
-      return json(await task(value, env.API_GLM, request.signal));
+      return json(await task(value, credentials, request.signal));
     } finally {
-      active = false;
+      active.delete(user);
     }
   } catch (error) {
     return error instanceof AiError

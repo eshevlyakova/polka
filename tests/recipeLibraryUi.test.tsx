@@ -36,8 +36,13 @@ function api() {
             }),
           }),
         );
+      init?.signal?.throwIfAborted();
       return handleRequest(
-        new Request(new URL(path, "https://api.test"), init),
+        new Request(new URL(path, "https://api.test"), {
+          method: init?.method,
+          headers: init?.headers,
+          body: init?.body,
+        }),
         {},
       );
     }),
@@ -48,7 +53,7 @@ async function openSearchResults() {
     target: { value: "360" },
   });
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   fireEvent.click(
     await screen.findByRole("button", { name: /Смотреть все \d+ рецептов/ }),
@@ -57,17 +62,17 @@ async function openSearchResults() {
     screen.getByRole("button", { name: "Любое время", exact: true }),
   );
 }
-it("opens all 501 recipes, loads later pages and returns from a detail without losing the list", async () => {
+it("opens all 3000 recipes, loads later pages and returns from a detail without losing the list", async () => {
   api();
   render(<App />);
   await openSearchResults();
-  await screen.findByText("Показано 12 из 501");
+  await screen.findByText("Показано 12 из 3000");
   const before = localStorage.getItem("polka:v1:browser");
   expect(document.querySelectorAll(".library-grid .library-card")).toHaveLength(
     12,
   );
   fireEvent.click(screen.getByRole("button", { name: "Загрузить ещё 12" }));
-  await screen.findByText("Показано 24 из 501");
+  await screen.findByText("Показано 24 из 3000");
   const first = document.querySelector(".library-card")!;
   const name = first.querySelector("strong")!.textContent!;
   fireEvent.click(first);
@@ -75,9 +80,9 @@ it("opens all 501 recipes, loads later pages and returns from a detail without l
   expect(document.querySelectorAll(".recipe-method li").length).toBeGreaterThan(
     0,
   );
-  expect(screen.getByText(/CC BY-SA 4.0/)).toBeTruthy();
+  expect(screen.getByText(/CC BY-(?:SA|NC) 4.0/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "К подборке" }));
-  await screen.findByText("Показано 24 из 501");
+  await screen.findByText("Показано 24 из 3000");
   expect(document.querySelectorAll(".library-grid .library-card")).toHaveLength(
     24,
   );
@@ -90,7 +95,7 @@ it("uses the whole database for the home request and exposes every match beyond 
     target: { value: "360" },
   });
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   await waitFor(() =>
     expect(
@@ -118,11 +123,11 @@ it("does not search the catalogue when AI interpretation is unavailable", async 
     );
   vi.stubGlobal("fetch", fetcher);
   render(<App />);
-  fireEvent.change(screen.getByLabelText("Что хочется сегодня?"), {
+  fireEvent.change(screen.getByLabelText("Пожелания к рецептам"), {
     target: { value: "Завтрак с яйцом" },
   });
   fireEvent.click(
-    screen.getByRole("button", { name: "Подобрать рецепты", exact: true }),
+    screen.getByRole("button", { name: "Найти рецепты", exact: true }),
   );
   await screen.findByRole("alert");
   expect(fetcher).toHaveBeenCalledTimes(1);
@@ -141,14 +146,14 @@ it("uses the static catalogue for an AI-interpreted request when the catalogue A
             maxMinutes: input.maxMinutes,
           }),
         });
-      return path.includes("catalog/recipe-library.json")
+      return path.includes("catalog/recipe-library-index.json")
         ? Response.json(recipes)
         : new Response(null, { status: 404 });
     }),
   );
   render(<App />);
   await openSearchResults();
-  await screen.findByText("Показано 12 из 501");
+  await screen.findByText("Показано 12 из 3000");
   expect(document.querySelectorAll(".library-card")).toHaveLength(12);
 });
 
@@ -156,7 +161,7 @@ it("applies manual time on blur without submitting an unfinished search and reje
   api();
   render(<App />);
   await openSearchResults();
-  await screen.findByText("Показано 12 из 501");
+  await screen.findByText("Показано 12 из 3000");
   fireEvent.change(screen.getByLabelText("Поиск рецептов"), {
     target: { value: "черновик" },
   });
@@ -178,6 +183,6 @@ it("applies manual time on blur without submitting an unfinished search and reje
   fireEvent.click(
     screen.getByRole("button", { name: "Любое время", exact: true }),
   );
-  await screen.findByText("Показано 12 из 501");
+  await screen.findByText("Показано 12 из 3000");
   expect((minutes as HTMLInputElement).value).toBe("");
 });

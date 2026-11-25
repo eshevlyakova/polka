@@ -1,8 +1,12 @@
 import recipeData from "../../data/recipes.json";
 import productData from "../../data/products.openfoodfacts.json";
+import retailerData from "../../data/products.retail.json";
 import type { CatalogRecipe, CatalogProduct } from "./types";
 export const catalogRecipes: CatalogRecipe[] = recipeData;
-export const catalogProducts: CatalogProduct[] = productData;
+export const catalogProducts: CatalogProduct[] = [
+  ...productData,
+  ...retailerData,
+];
 const normalize = (value: string) =>
   value.toLocaleLowerCase("ru").replace(/ё/g, "е");
 // Search aliases only; original ingredient quantities and source text are unchanged.
@@ -63,12 +67,12 @@ export function searchProducts(query: string, limit = 20) {
   return catalogProducts
     .filter(
       (p) =>
-        p.barcode === q ||
+        p.barcode === q || p.barcodes?.includes(q) ||
         words.every((w) => normalize(`${p.name} ${p.brand}`).includes(w)),
     )
     .sort(
       (a, b) =>
-        Number(b.barcode === q) - Number(a.barcode === q) ||
+        Number(b.barcode === q || b.barcodes?.includes(q)) - Number(a.barcode === q || a.barcodes?.includes(q)) ||
         a.name.localeCompare(b.name, "ru"),
     )
     .slice(0, limit);

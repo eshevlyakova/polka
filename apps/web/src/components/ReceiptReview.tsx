@@ -14,10 +14,14 @@ export function ReceiptReview({
   rows,
   onChange,
   catalog,
+  originLabel = "В чеке",
+  editableNames = false,
 }: {
   rows: ReceiptDraft[];
   onChange: Dispatch<SetStateAction<ReceiptDraft[] | null>>;
   catalog: Food[];
+  originLabel?: string;
+  editableNames?: boolean;
 }) {
   const update = (id: string, value: Partial<ReceiptDraft>) =>
     onChange(
@@ -45,10 +49,20 @@ export function ReceiptReview({
                 />
                 <span>{String(index + 1).padStart(2, "0")}</span>
               </label>
-              <strong>{row.name}</strong>
+              {editableNames ? (
+                <input
+                  className="receipt-name-input"
+                  aria-label={`Название продукта ${index + 1}`}
+                  maxLength={160}
+                  value={row.name}
+                  onChange={(e) => update(row.id, { name: e.target.value })}
+                />
+              ) : (
+                <strong>{row.name}</strong>
+              )}
               <button
                 className="icon-button"
-                aria-label={`Убрать ${row.name} из чека`}
+                aria-label={`Убрать ${row.name} из списка`}
                 onClick={() =>
                   onChange(
                     (current) =>
@@ -71,13 +85,21 @@ export function ReceiptReview({
                     max="100000"
                     placeholder="Уточни количество"
                     value={row.grams}
-                    onChange={(e) => update(row.id, { grams: e.target.value })}
+                    onChange={(e) =>
+                      update(row.id, {
+                        grams: e.target.value,
+                        quantityHint: undefined,
+                      })
+                    }
                   />
                 </label>
+                {row.quantityHint && (
+                  <p className="receipt-hint">{row.quantityHint}</p>
+                )}
                 {!row.grams && (
                   <p className="receipt-hint">
                     {recognized.quantity !== null
-                      ? `В чеке: ${recognized.quantity.toLocaleString("ru")} ${units[recognized.unit ?? ""] ?? ""}. `
+                      ? `${originLabel}: ${recognized.quantity.toLocaleString("ru")} ${units[recognized.unit ?? ""] ?? ""}. `
                       : ""}
                     Уточни массу.
                   </p>

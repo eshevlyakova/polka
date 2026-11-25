@@ -17,11 +17,11 @@ export function ReceiptDialog({ app }: { app: AppController }) {
 function ReceiptFlow({ app }: { app: AppController }) {
   const [image, setImage] = useState("");
   const [rows, setRows] = useState<ReceiptDraft[] | null>(null);
+  const [reviewing, setReviewing] = useState(false);
   const [ignored, setIgnored] = useState(0);
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const { error, setError } = useTimedError();
-  const [testCode, setTestCode] = useState("");
   const pending = useRef<AbortController | null>(null);
   const disposed = useRef(false);
   const saved = useRef(false);
@@ -38,7 +38,10 @@ function ReceiptFlow({ app }: { app: AppController }) {
     setError("");
     try {
       const data = await prepareReceiptImage(file);
-      if (!disposed.current) setImage(data);
+      if (!disposed.current && data !== image) {
+        setImage(data);
+        setRows(null);
+      }
     } catch (err) {
       if (!disposed.current)
         setError(
@@ -55,7 +58,7 @@ function ReceiptFlow({ app }: { app: AppController }) {
     setBusy(true);
     setError("");
     try {
-      const result = await fetchReceipt(image, testCode, controller.signal);
+      const result = await fetchReceipt(image, controller.signal);
       if (controller.signal.aborted) return;
       if (!result.items.length)
         throw new Error(
@@ -63,6 +66,7 @@ function ReceiptFlow({ app }: { app: AppController }) {
         );
       setRows(receiptDrafts(result.items, app.catalog));
       setIgnored(result.ignoredCount);
+      setReviewing(true);
     } catch (err) {
       if (!controller.signal.aborted)
         setError(
@@ -77,10 +81,23 @@ function ReceiptFlow({ app }: { app: AppController }) {
   }
   return (
     <Modal
-      title={rows ? "Проверим продукты" : "Продукты из чека"}
-      onClose={() => app.setModal(null)}
+      title={reviewing ? "Проверим продукты" : "Продукты из чека"}
+      confirmClose={Boolean(rows?.length)}
+      onBack={
+        rows && !reviewing
+          ? undefined
+          : () => {
+              if (saved.current) return;
+              setError("");
+              if (reviewing) setReviewing(false);
+              else app.setModal("add-pantry");
+            }
+      }
+      onClose={() => {
+        if (!saved.current) app.setModal(null);
+      }}
     >
-      {rows ? (
+      {reviewing && rows ? (
         <>
           {ignored > 0 && (
             <p className="receipt-intro">
@@ -97,11 +114,7 @@ function ReceiptFlow({ app }: { app: AppController }) {
               try {
                 const next = importReceipt(app.state, rows, app.catalog);
                 await app.commit(next);
-                saved.current = true;
-                app.setModal(null);
-                app.setMessage(
-                  `На полку добавлено продуктов: ${rows.filter((r) => r.selected).length}`,
-                );
+                app.finishAddingProducts();
               } catch (err) {
                 saved.current = false;
                 setError(
@@ -114,15 +127,6 @@ function ReceiptFlow({ app }: { app: AppController }) {
             }}
           >
             Добавить на полку · {rows.filter((r) => r.selected).length}
-          </button>
-          <button
-            className="text-button"
-            onClick={() => {
-              setRows(null);
-              setError("");
-            }}
-          >
-            Вернуться к фото
           </button>
         </>
       ) : (
@@ -162,32 +166,22 @@ function ReceiptFlow({ app }: { app: AppController }) {
             </label>
           </div>
           {preparing && <p role="status">Подготавливаем фото…</p>}
-          {import.meta.env.VITE_AI_API_URL && (
-            <details className="ai-access">
-              <summary>Код тестирования</summary>
-              <label>
-                Код доступа
-                <input
-                  type="password"
-                  autoComplete="off"
-                  value={testCode}
-                  onChange={(e) => setTestCode(e.target.value)}
-                  maxLength={200}
-                />
-              </label>
-            </details>
-          )}
+
           <button
             className="primary"
             disabled={!image || busy || preparing}
-            onClick={() => void recognize()}
+            onClick={() => (rows ? setReviewing(true) : void recognize())}
           >
             {busy ? (
               <LoaderCircle className="ai-spinner" size={19} />
             ) : (
               <ScanLine size={19} />
             )}
-            {busy ? "Читаем чек…" : "Распознать продукты"}
+            {busy
+              ? "Читаем чек…"
+              : rows
+                ? "Вернуться к списку"
+                : "Распознать продукты"}
           </button>
           {busy && (
             <button

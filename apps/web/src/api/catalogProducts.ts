@@ -1,3 +1,4 @@
+import { validNutrition } from "../../../../shared/nutritionMatching";
 import type { Food } from "../domain/model";
 import { apiEndpoint } from "./endpoint";
 export type CatalogMatch = {
@@ -28,17 +29,25 @@ export async function searchCatalogProducts(
     !Array.isArray(data.items) ||
     data.items.some(
       (p: CatalogMatch) =>
-        !p?.id ||
+        typeof p?.id !== "string" ||
+        !p.id ||
         typeof p.name !== "string" ||
-        !p.per100 ||
-        !["kcal", "protein", "fat", "carbs"].every(
-          (k) =>
-            typeof p.per100[k as keyof Food["per100"]] === "number" &&
-            Number.isFinite(p.per100[k as keyof Food["per100"]]) &&
-            p.per100[k as keyof Food["per100"]] >= 0,
-        ),
+        typeof p.brand !== "string" ||
+        typeof p.barcode !== "string" ||
+        typeof p.source?.url !== "string" ||
+        !/^https?:\/\//i.test(p.source.url) ||
+        !validNutrition(p.per100),
     )
   )
     throw new Error("Не удалось проверить данные каталога.");
   return data.items;
+}
+
+export function catalogFood(product: CatalogMatch): Food {
+  return {
+    id: product.id,
+    name: [product.name, product.brand].filter(Boolean).join(" · "),
+    emoji: "",
+    per100: product.per100,
+  };
 }

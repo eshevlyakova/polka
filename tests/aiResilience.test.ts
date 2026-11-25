@@ -1,6 +1,6 @@
 import { it, expect, vi } from "vitest";
 import { generateRecipes } from "../apps/backend/src/ai/provider";
-import { providerError, completion } from "../apps/backend/src/ai/zai";
+import { providerError, completion } from "../apps/backend/src/ai/client";
 import { adaptationReferences } from "../apps/backend/src/catalog/recipeContext";
 import { parseAiRequest } from "../shared/aiRecipes";
 import { foodMeasures, kitchenAmount } from "../apps/web/src/domain/measures";

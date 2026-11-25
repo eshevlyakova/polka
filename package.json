@@ -11,6 +11,8 @@
   "scripts": {
     "import:products": "python3 apps/backend/scripts/import-products.py",
     "import:recipes": "python3 apps/backend/scripts/import-recipe-library.py",
+    "import:recipes:ru": "python3 apps/backend/scripts/import-rurecipes.py",
+    "import:products:bulk": "python3 apps/backend/scripts/import-off-bulk.py",
     "dev": "npm run dev -w @polka/web",
     "dev:bot": "npm run dev -w @polka/bot",
     "build": "npm run build -w @polka/web",

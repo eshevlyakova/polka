@@ -1,5 +1,5 @@
 import { Plus, Pencil, Trash2, Sunrise, Sun, Moon, Coffee } from "lucide-react";
-import { Empty, Macros } from "../components/ui";
+import { Macros } from "../components/ui";
 import { WeekStrip } from "../components/WeekStrip";
 import { deleteEntry } from "../domain/actions";
 import { sum } from "../domain/nutrition";
@@ -31,11 +31,11 @@ export function DiaryScreen({ app }: { app: AppController }) {
           <h1>Дневник</h1>
         </div>
         <button
-          className="round"
+          className="pantry-add"
           aria-label="Записать приём пищи"
           onClick={() => app.openFood(undefined, diaryDate)}
         >
-          <Plus />
+          <Plus size={18} /> Записать
         </button>
       </div>
       <WeekStrip
@@ -46,7 +46,15 @@ export function DiaryScreen({ app }: { app: AppController }) {
       <section className="card diary-overview">
         <div className="summary-top">
           <p>Итог за день</p>
-          <span>{records.length} записи</span>
+          <span>
+            {records.length}{" "}
+            {records.length % 10 === 1 && records.length % 100 !== 11
+              ? "запись"
+              : [2, 3, 4].includes(records.length % 10) &&
+                  ![12, 13, 14].includes(records.length % 100)
+                ? "записи"
+                : "записей"}
+          </span>
         </div>
         <Macros n={n} />
       </section>
@@ -123,9 +131,6 @@ export function DiaryScreen({ app }: { app: AppController }) {
           </button>
         </section>
       ))}
-      {!records.length && (
-        <Empty>Выбери день с отметкой или добавь первую запись.</Empty>
-      )}
     </>
   );
 }

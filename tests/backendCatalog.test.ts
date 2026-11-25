@@ -25,15 +25,25 @@ it("ships 100 distinct source recipes and complete branded nutrition records", (
     expect(r.nameRu).toBeTruthy();
   }
   expect(catalogProducts.length).toBeGreaterThan(100);
-  expect(new Set(catalogProducts.map((p) => p.barcode)).size).toBe(
+  const withBarcode = catalogProducts.filter((p) => p.barcode);
+  expect(new Set(withBarcode.map((p) => p.barcode)).size).toBe(
+    withBarcode.length,
+  );
+  expect(new Set(catalogProducts.map((p) => p.id)).size).toBe(
     catalogProducts.length,
   );
   for (const p of catalogProducts) {
     expect(
       Object.values(p.per100).every((n) => Number.isFinite(n) && n >= 0),
     ).toBe(true);
-    expect(p.source.url).toContain(p.barcode);
-    expect(p.verification).toBe("community-unverified");
+    if (p.barcode) {
+      expect(p.source.url).toContain(p.barcode);
+      expect(p.verification).toBe("community-unverified");
+    } else {
+      expect(p.source.url).toMatch(/^https:\/\/5ka.ru\/product\//);
+      expect(p.verification).toContain("physical label not verified");
+      expect(p.packages?.length).toBeGreaterThan(0);
+    }
   }
 });
 it("serves pagination and exact barcode lookup without raw source Markdown or credentials", async () => {

@@ -1,4 +1,5 @@
-import { completion } from "./zai";
+import { completion } from "./client";
+import type { AiCredentials } from "./config";
 import { AiError } from "../../../../shared/aiRecipes";
 import { basicFoods } from "../../../../shared/basicFoods";
 import {
@@ -12,7 +13,7 @@ import { nutritionCandidates } from "../../../../shared/nutritionMatching";
 
 export async function recognizeReceipt(
   image: string,
-  key: string,
+  key: AiCredentials,
   fetcher: typeof fetch = fetch,
   signal?: AbortSignal,
 ): Promise<ReceiptResult> {

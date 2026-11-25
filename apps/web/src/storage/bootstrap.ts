@@ -19,6 +19,7 @@ export function bootstrapPrototype(
     !current.batches.length &&
     !current.customFoods.length &&
     !current.profile &&
+    !current.recipeFeedback?.length &&
     !current.aiRecipes?.length;
   if (!current || (empty && !storage.getItem(marker))) {
     const next = createDemoState(now);

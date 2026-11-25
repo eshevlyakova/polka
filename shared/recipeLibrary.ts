@@ -33,6 +33,7 @@ export type LibraryIngredient = {
   quantity: number | null;
   unit: string;
   note?: string | null;
+  rawAmount?: string;
 };
 export type LibraryRecipe = {
   id: string;
@@ -41,17 +42,19 @@ export type LibraryRecipe = {
   country: string;
   category: string;
   diets: string[];
-  servings: number;
-  minutes: number;
-  perServing: Nutrients;
+  servings: number | null;
+  minutes: number | null;
+  perServing: Nutrients | null;
   ingredients: LibraryIngredient[];
   steps: string[];
   origin: RecipeOrigin;
 };
-export type LibraryCard = Omit<LibraryRecipe, "steps"> & {
+export type LibraryMetadata = Omit<LibraryRecipe, "steps">;
+export type LibraryCard = LibraryMetadata & {
   stockMatches: number;
 };
 export type LibrarySearch = {
+  excludedRecipeIds?: string[];
   query: string;
   maxMinutes: number;
   category: string;
@@ -85,8 +88,11 @@ export const libraryCategories: Record<string, string> = {
 export const normalizeRecipeText = (s: string) =>
   s.toLocaleLowerCase("ru").replace(/ё/g, "е").replace(/яицом/gu, "яйцом");
 /** Light lexical matching only; never claim arbitrary natural-language understanding. */
+const wordCache = new Map<string, string[]>();
 export function recipeWords(text: string) {
-  return normalizeRecipeText(text)
+  const cached = wordCache.get(text);
+  if (cached) return [...cached];
+  const result = normalizeRecipeText(text)
     .split(/[^\p{L}\p{N}]+/u)
     .filter((w) => w.length > 2 && !/^\d+$/.test(w))
     .map((w) =>
@@ -101,6 +107,9 @@ export function recipeWords(text: string) {
       if (/^(?:яйц|яиц)/u.test(w)) return "яйц";
       return w === "куриц" ? "курин" : w;
     });
+  if (wordCache.size >= 20000) wordCache.delete(wordCache.keys().next().value!);
+  wordCache.set(text, result);
+  return [...result];
 }
 export function ingredientOnShelf(
   name: string,
@@ -128,9 +137,11 @@ export function ingredientOnShelf(
 export function libraryQuantity(
   i: LibraryIngredient,
   servings: number,
-  base: number,
+  base: number | null,
 ) {
-  if (i.quantity === null || i.unit === "toTaste") return "по вкусу";
+  if (i.quantity === null) return i.unit === "toTaste" ? "по вкусу" : i.rawAmount || "не указано";
+  if (i.unit === "toTaste") return "по вкусу";
+  if (base === null) return `${i.quantity.toLocaleString("ru")} ${({ g: "г", kg: "кг", ml: "мл", l: "л", piece: "шт.", tbsp: "ст. л.", tsp: "ч. л.", cup: "стак.", clove: "зубч.", pinch: "щеп.", bunch: "пуч." } as Record<string, string>)[i.unit] ?? i.unit}`;
   const n = (i.quantity * servings) / base;
   const household = [
     "piece",
@@ -158,6 +169,8 @@ export function libraryQuantity(
     pinch: "щеп.",
     sprig: "веточки",
     slice: "ломтика",
+    cup: "стак.",
+    bunch: "пуч.",
   };
   const amount = household
     ? rounded === 0

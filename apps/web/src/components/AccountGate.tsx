@@ -8,7 +8,9 @@ import {
 import { RemoteRepository } from "../storage/remote";
 import { legacySaves, type LegacySave } from "../storage/legacy";
 import { StateSessionContext, type StateSession } from "../storage/session";
-import { storageKey, telegram } from "../telegram";
+import { telegram } from "../telegram";
+import { Send } from "lucide-react";
+import { PearMascot } from "./PearMascot";
 import { Logo } from "./ui";
 import type { Account } from "../../../../shared/account";
 
@@ -50,17 +52,22 @@ export function AccountGate({ children }: { children: ReactNode }) {
         snapshot.revision === 0
           ? legacySaves(localStorage, user)
           : { saves: [], unreadable: false };
-      if (legacy.saves.length || legacy.unreadable)
-        setGate({ phase: "import", session, ...legacy });
+      const saves = legacy.saves.filter((save) => !save.demo);
+      if (saves.length || legacy.unreadable)
+        setGate({ phase: "import", session, ...legacy, saves });
       else setGate({ phase: "ready", session });
     } catch (cause) {
       if (attempt === generation.current)
         setGate({
           phase: "entry",
           error:
-            cause instanceof Error
-              ? cause.message
-              : "Не удалось открыть аккаунт.",
+            cause instanceof AccountApiError &&
+            cause.status === 401 &&
+            !telegram?.initData
+              ? ""
+              : cause instanceof Error
+                ? cause.message
+                : "Не удалось открыть аккаунт.",
         });
     }
   }
@@ -86,20 +93,8 @@ export function AccountGate({ children }: { children: ReactNode }) {
       },
     };
   }
-  function demo(key = "polka:demo:v1") {
-    ++generation.current;
-    setGate({
-      phase: "ready",
-      session: {
-        mode: "demo",
-        key,
-        exit: () => setGate({ phase: "entry", error: "" }),
-      },
-    });
-  }
   useEffect(() => {
-    if (import.meta.env.DEV && !telegram?.initData) demo(storageKey);
-    else void enter();
+    void enter();
     return () => {
       ++generation.current;
     };
@@ -108,21 +103,19 @@ export function AccountGate({ children }: { children: ReactNode }) {
   if (gate.phase === "ready")
     return (
       <StateSessionContext.Provider value={gate.session}>
-        <div
-          key={
-            gate.session.mode === "account"
-              ? gate.session.user.id
-              : gate.session.key
-          }
-        >
-          {children}
-        </div>
+        <div key={gate.session.user.id}>{children}</div>
       </StateSessionContext.Provider>
     );
 
   return (
     <main className="account-gate">
-      <Logo />
+      <header className="account-brand">
+        <div>
+          <Logo />
+          <p>Знает, что у тебя есть.</p>
+        </div>
+        <PearMascot compact />
+      </header>
       <section className="account-card">
         {gate.phase === "loading" ? (
           <>
@@ -131,10 +124,10 @@ export function AccountGate({ children }: { children: ReactNode }) {
           </>
         ) : gate.phase === "entry" ? (
           <>
-            <h1>Твоя Полка — в Telegram</h1>
+            <h1>Вход через Telegram</h1>
             <p>
-              Войди через бота, чтобы продукты и дневник были с тобой на разных
-              устройствах.
+              Открой бота и нажми «Открыть Полку». Продукты, рецепты и дневник
+              будут в твоём аккаунте.
             </p>
             {gate.error && (
               <p className="notice error" role="alert">
@@ -142,14 +135,13 @@ export function AccountGate({ children }: { children: ReactNode }) {
               </p>
             )}
             <a className="primary" href="https://t.me/polka_food_bot">
-              Открыть @polka_food_bot
+              <Send size={18} aria-hidden="true" /> Открыть Полку в Telegram
             </a>
-            <button className="secondary" onClick={() => void enter()}>
-              Войти снова
-            </button>
-            <button className="text-button" onClick={() => demo()}>
-              Посмотреть демо
-            </button>
+            {gate.error && (
+              <button className="text-button" onClick={() => void enter()}>
+                Повторить вход
+              </button>
+            )}
           </>
         ) : gate.phase === "import" ? (
           <>
@@ -161,11 +153,9 @@ export function AccountGate({ children }: { children: ReactNode }) {
             {gate.saves.map((save) => (
               <article className="legacy-save" key={save.key}>
                 <strong>
-                  {save.demo
-                    ? "Демонстрационные записи"
-                    : save.key.endsWith(":browser")
-                      ? "Записи из браузера"
-                      : "Прежние записи Telegram"}
+                  {save.key.endsWith(":browser")
+                    ? "Записи из браузера"
+                    : "Прежние записи Telegram"}
                 </strong>
                 {save.state.profile?.name && <p>{save.state.profile.name}</p>}
                 <p>
@@ -213,7 +203,7 @@ export function AccountGate({ children }: { children: ReactNode }) {
               Начать с пустой полкой
             </button>
             <p className="muted">
-              Старая локальная копия останется на устройстве.
+              Прежние записи останутся на этом устройстве.
             </p>
           </>
         ) : (

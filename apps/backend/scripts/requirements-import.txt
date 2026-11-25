@@ -1,0 +1,2 @@
+# Optional offline import tool only; not a server/runtime dependency.
+duckdb==2.0.1

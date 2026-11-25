@@ -5,11 +5,12 @@ import {
 } from "../../../../shared/aiRecipes";
 import { recipeSearchPlan } from "../../../../shared/aiRecipeSearch";
 import { libraryCategories } from "../../../../shared/recipeLibrary";
-import { completion } from "./zai";
+import { completion } from "./client";
+import type { AiCredentials } from "./config";
 
 export async function interpretRecipeSearch(
   request: AiRecipeRequest,
-  key: string,
+  key: AiCredentials,
   fetcher: typeof fetch = fetch,
   signal?: AbortSignal,
 ) {
@@ -26,8 +27,11 @@ export async function interpretRecipeSearch(
       { role: "user", content: JSON.stringify(request) },
     ],
   };
-  // Both IDs are free. Never silently use a paid model or a lexical substitute.
-  const models = [AI_MODEL, "glm-4.5-flash"];
+  // Legacy Z.ai uses two free models. Timeweb retries only the selected model.
+  const models =
+    typeof key === "string"
+      ? [AI_MODEL, "glm-4.5-flash"]
+      : [key.textModel, key.textModel];
   for (let attempt = 0; attempt < models.length; attempt++) {
     try {
       const content = await completion(

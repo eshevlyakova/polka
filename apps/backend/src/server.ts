@@ -22,7 +22,7 @@ const server = createServer(async (incoming, outgoing) => {
       size += buffer.length;
       if (
         size >
-        ((incoming.url ?? "").split("?")[0].endsWith("/ai/receipt")
+        (/\/ai\/(receipt|transcribe)$/.test((incoming.url ?? "").split("?")[0])
           ? RECEIPT_BODY_LIMIT
           : (incoming.url ?? "").split("?")[0] === "/api/state"
             ? STATE_BODY_LIMIT

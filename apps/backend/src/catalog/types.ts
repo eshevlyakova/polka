@@ -16,6 +16,9 @@ export type CatalogRecipe = {
   translation?: { method: string; reviewed: boolean };
 };
 export type CatalogProduct = {
+  barcodes?: string[];
+  stores?: string[];
+  packages?: { sourceId: string; label: string; url: string }[];
   id: string;
   barcode: string;
   name: string;

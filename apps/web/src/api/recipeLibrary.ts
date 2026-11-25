@@ -2,14 +2,15 @@ import type {
   LibraryRecipe,
   LibrarySearch,
   LibraryPage,
+  LibraryMetadata,
 } from "../../../../shared/recipeLibrary";
 import { searchLibrary } from "../../../../shared/librarySearch";
 import { apiEndpoint } from "./endpoint";
-let snapshot: LibraryRecipe[] | undefined;
+let snapshot: LibraryMetadata[] | undefined;
 async function staticRecipes(signal: AbortSignal) {
   if (snapshot) return snapshot;
   const response = await fetch(
-    `${import.meta.env.BASE_URL}catalog/recipe-library.json`,
+    `${import.meta.env.BASE_URL}catalog/recipe-library-index.json`,
     { signal },
   );
   if (!response.ok)
@@ -21,8 +22,7 @@ async function staticRecipes(signal: AbortSignal) {
       (r) =>
         typeof r.id !== "string" ||
         typeof r.name !== "string" ||
-        !Array.isArray(r.ingredients) ||
-        !Array.isArray(r.steps),
+        !Array.isArray(r.ingredients),
     )
   )
     throw new Error("Не удалось прочитать каталог.");
@@ -74,7 +74,16 @@ export async function fetchLibraryRecipe(
       if (signal.aborted) throw err;
     }
   }
-  const found = (await staticRecipes(signal)).find((r) => r.id === id);
+  const detail = await fetch(`${import.meta.env.BASE_URL}catalog/recipes/${encodeURIComponent(id)}.json`, { signal });
+  if (detail.ok) {
+    const recipe = await detail.json();
+    if (recipe.id === id && Array.isArray(recipe.ingredients) && Array.isArray(recipe.steps)) return recipe;
+  }
+  // Compatibility with an older static deployment that has not generated per-recipe files yet.
+  const response = await fetch(`${import.meta.env.BASE_URL}catalog/recipe-library.json`, { signal });
+  if (!response.ok) throw new Error("Рецепт пока недоступен.");
+  const all: LibraryRecipe[] = await response.json();
+  const found = all.find((r) => r.id === id);
   if (!found) throw new Error("Рецепт не найден.");
   return found;
 }

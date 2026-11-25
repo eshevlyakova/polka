@@ -124,5 +124,34 @@ export function parseState(value: unknown): AppState {
   )
     throw new Error("Некорректная подборка рецептов");
   if (s.profile !== undefined) validateProfile(s.profile);
+  if (
+    s.recipeFeedback !== undefined &&
+    (!Array.isArray(s.recipeFeedback) ||
+      s.recipeFeedback.length > 3000 ||
+      new Set(s.recipeFeedback.map((f) => f?.recipeId)).size !==
+        s.recipeFeedback.length ||
+      !s.recipeFeedback.every(
+        (f) =>
+          f &&
+          typeof f.recipeId === "string" &&
+          f.recipeId.length > 0 &&
+          f.recipeId.length <= 160 &&
+          typeof f.name === "string" &&
+          f.name.trim().length > 0 &&
+          f.name.length <= 200 &&
+          typeof f.category === "string" &&
+          f.category.length <= 80 &&
+          ["like", "dislike"].includes(f.rating) &&
+          typeof f.updatedAt === "string" &&
+          f.updatedAt.length <= 40 &&
+          Number.isFinite(Date.parse(f.updatedAt)) &&
+          Array.isArray(f.ingredients) &&
+          f.ingredients.length <= 100 &&
+          f.ingredients.every(
+            (i) => typeof i === "string" && i.length > 0 && i.length <= 200,
+          ),
+      ))
+  )
+    throw new Error("Некорректные оценки рецептов");
   return s;
 }

@@ -1,5 +1,8 @@
 import { authorizedAiTask, handleAiRequest, type AiEnv } from "./ai/handler";
 import { recognizeReceipt } from "./ai/receipt";
+import { interpretProducts, transcribeProducts } from "./ai/voice";
+import { speakQuestion } from "./ai/speech";
+import { VOICE_BODY_LIMIT } from "../../../shared/voice";
 import { receiptImage, RECEIPT_BODY_LIMIT } from "../../../shared/receipt";
 import { nutritionCandidates } from "../../../shared/nutritionMatching";
 import { basicFoods } from "../../../shared/basicFoods";
@@ -23,6 +26,28 @@ export async function handleRequest(
   local = false,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/ai/transcribe")
+    return authorizedAiTask(
+      request,
+      env,
+      local,
+      (value, connection, signal) =>
+        transcribeProducts(
+          value,
+          connection,
+          env.AI_SPEECH_MODEL?.trim() || "openai/gpt-4o-mini-transcribe",
+          signal,
+        ),
+      VOICE_BODY_LIMIT,
+    );
+  if (url.pathname === "/api/ai/speak")
+    return authorizedAiTask(request, env, local, (value, connection, signal) =>
+      speakQuestion(value, connection, signal),
+    );
+  if (url.pathname === "/api/ai/products")
+    return authorizedAiTask(request, env, local, (value, connection, signal) =>
+      interpretProducts(value, connection, signal),
+    );
   if (url.pathname === "/api/state") return userStateRequest(request, env);
   if (url.pathname === "/api/me" || url.pathname.startsWith("/api/auth/"))
     return accountRequest(request, env, local);
@@ -121,8 +146,18 @@ export async function handleRequest(
       total: found.length,
       offset,
       limit,
-      attribution: "Open Food Facts — ODbL-1.0",
-      licenseUrl: "https://opendatacommons.org/licenses/odbl/1-0/",
+      attribution: [
+        ...new Set(
+          found.map((p) =>
+            p.source.name === "Open Food Facts"
+              ? "Open Food Facts — ODbL-1.0"
+              : p.source.name,
+          ),
+        ),
+      ].join("; "),
+      licenseUrl: found.every((p) => p.source.name === "Open Food Facts")
+        ? "https://opendatacommons.org/licenses/odbl/1-0/"
+        : null,
       verified: false,
     });
   }

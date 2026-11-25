@@ -36,6 +36,10 @@ for r in data['recipes']:
         'ingredients':ingredients,'steps':[s['text']['ru'] for s in r['steps']],
         'origin':{'label':'UniTools — theunitools.com','url':'https://theunitools.com/ru/data','license':'CC BY-SA 4.0','licenseUrl':data['licenseUrl']}})
 assert len({r['id'] for r in result}) == len(result)
+# Updating UniTools must not erase the independently imported noncommercial set.
+current_path = ROOT/'recipe-library.json'
+preserved = [r for r in json.loads(current_path.read_text()) if r['id'].startswith('rf-')] if current_path.exists() else []
+result.extend(preserved)
 def save(name, value):
     target=ROOT/name
     temp=target.with_suffix('.tmp')
@@ -43,7 +47,7 @@ def save(name, value):
     temp.replace(target)
 save('recipe-library.json',result)
 save('recipe-library-import.json',{'importedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'sourceUrl':URL,
-    'version':data['version'],'sourceSha256':hashlib.sha256(raw).hexdigest(),'recipes':len(result),'language':'ru',
+    'version':data['version'],'sourceSha256':hashlib.sha256(raw).hexdigest(),'recipes':len(data['recipes']),'preservedOtherRecipes':len(preserved),'language':'ru',
     'license':data['license'],'licenseUrl':data['licenseUrl'],'attribution':data['attribution'],
     'changes':'Selected Russian fields; renamed fields and calories to kcal; no photos imported. Original recipe quantities and nutrition preserved.'})
 (ROOT/'sources'/'unitools-LICENSE.md').write_text('Recipe data: UniTools — theunitools.com\n\nhttps://theunitools.com/ru/data\n\nCC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/\n\nNormalized recipe-library.json is a derivative of the UniTools v2.0.0 dataset and is distributed under CC BY-SA 4.0. App source code and private user data are separate. No photographs are copied.\n')

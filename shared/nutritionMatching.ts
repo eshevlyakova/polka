@@ -5,6 +5,7 @@ export type NutritionProduct = {
   name: string;
   brand: string;
   barcode: string;
+  barcodes?: string[];
   quantityLabel: string;
   per100: Food["per100"];
   basis: string;
@@ -182,7 +183,7 @@ export function nutritionCandidates(
         productFat = fat(p.name);
       const matches = terms.filter((t) => body.some((w) => same(t, w))).length;
       const coverage = terms.length ? matches / terms.length : 0;
-      const barcode = Boolean(p.barcode && q.includes(p.barcode));
+      const barcode = [p.barcode, ...(p.barcodes ?? [])].some((code) => code && q.includes(code));
       const brandTerms = tokens(p.brand);
       const brand =
         brandTerms.length > 0 &&

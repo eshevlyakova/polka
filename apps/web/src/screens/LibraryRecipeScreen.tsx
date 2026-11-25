@@ -29,8 +29,7 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
     [loading, setLoading] = useState(true),
     [servings, setServings] = useState(1),
     [done, setDone] = useState<number[]>([]),
-    [busy, setBusy] = useState(false),
-    [code, setCode] = useState("");
+    [busy, setBusy] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const { error, setError } = useTimedError();
   const pending = useRef<AbortController | null>(null),
@@ -44,7 +43,7 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
       .then((r) => {
         if (!controller.signal.aborted) {
           setRecipe(r);
-          setServings(r.servings);
+          setServings(r.servings ?? 2);
           setDone([]);
         }
       })
@@ -73,9 +72,9 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
           `Адаптируй выбранный рецепт «${recipe.name}» под мои продукты на ${servings} порций. Сохрани характер блюда. Предложи один вариант, по возможности без замены основных ингредиентов.`,
         ),
         referenceRecipeId: recipe.id,
-        maxMinutes: Math.max(recipe.minutes, app.state.settings.maxMinutes),
+        maxMinutes: Math.max(recipe.minutes ?? 0, app.state.settings.maxMinutes),
       };
-      const recipes = await fetchAiRecipes(request, code, controller.signal);
+      const recipes = await fetchAiRecipes(request, controller.signal);
       if (controller.signal.aborted) return;
       const current = latest.current;
       if (
@@ -134,13 +133,14 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
             <h1>{recipe.name}</h1>
             <p>
               <Clock3 size={15} />
-              {recipe.minutes} мин
+              {recipe.minutes === null ? "Время в источнике не указано" : `${recipe.minutes} мин`}
             </p>
           </header>
           <p className="library-summary">{recipe.summary}</p>
           <section className="recipe-portions">
             <div>
               <h2>Сколько приготовим?</h2>
+              {recipe.servings === null && <p className="recipe-measures-note">Порции для адаптации. Ниже — исходные количества ингредиентов.</p>}
             </div>
             <div className="portions-stepper">
               <button
@@ -170,14 +170,14 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
               </button>
             </div>
           </section>
-          <section className="recipe-nutrition">
+          {recipe.perServing && <section className="recipe-nutrition">
             <h3>Примерно на порцию</h3>
             <Macros n={recipe.perServing} />
             <section className="recipe-total-inline">
               <h3>На всё блюдо · {servings} порц.</h3>
               <Macros n={scale(recipe.perServing, servings)} />
             </section>
-          </section>
+          </section>}
           <section className="recipe-ingredients">
             <div className="section-title">
               <h2>Ингредиенты</h2>
@@ -238,17 +238,7 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
             <p className="recipe-measures-note">
               Состав и КБЖУ — по твоим продуктам.
             </p>
-            {import.meta.env.VITE_AI_API_URL && (
-              <details className="ai-access">
-                <summary>Код тестирования</summary>
-                <input
-                  aria-label="Код тестирования"
-                  type="password"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                />
-              </details>
-            )}
+
             <button
               className="primary"
               disabled={busy || !configured}
@@ -276,7 +266,7 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
             )}
             {!configured && (
               <p className="recipe-measures-note">
-                Адаптация к полке пока не подключена к этой версии. Рецепт можно
+                Подбор замен сейчас недоступен. Рецепт можно
                 читать и менять количество порций.
               </p>
             )}
@@ -290,7 +280,7 @@ export function LibraryRecipeScreen({ app }: { app: AppController }) {
             <a href={recipe.origin.licenseUrl} target="_blank" rel="noreferrer">
               {recipe.origin.license}
             </a>
-            . КБЖУ — оценка из источника.
+            {recipe.perServing ? ". КБЖУ — оценка из источника." : ". В источнике нет КБЖУ; рассчитаем по составу после подготовки рецепта."}
           </p>
         </>
       )}

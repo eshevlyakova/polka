@@ -11,9 +11,11 @@ import { ProfileScreen } from "./screens/ProfileScreen";
 import { LibraryScreen } from "./screens/LibraryScreen";
 import { LibraryRecipeScreen } from "./screens/LibraryRecipeScreen";
 import { Modal } from "./components/ui";
+import { OnboardingDialog } from "./components/dialogs/OnboardingDialog";
 export function App() {
   const app = useAppController();
   const { error, setError, message, setMessage, tab, setTab } = app;
+  const welcome = !app.state.settings.onboarded;
   return (
     <div
       className="app"
@@ -51,7 +53,7 @@ export function App() {
             <Logo />
             <p className="tagline">Знает, что у тебя есть.</p>
           </div>
-          {tab === "home" && <PearMascot />}
+          {tab === "home" && !welcome && <PearMascot />}
         </header>
       )}
       {error && (
@@ -71,7 +73,37 @@ export function App() {
         </div>
       )}
       <main>
-        {app.selected ? (
+        {app.lastRating && (
+          <div className="notice recipe-rating-notice" role="status">
+            <span>
+              {app.lastRating.rating === "like"
+                ? "Учтём твой вкус в следующих идеях."
+                : "Убрали рецепт. Учтём, что тебе не понравилось."}
+            </span>
+            <button
+              type="button"
+              disabled={app.saving}
+              onClick={() =>
+                app.removeRecipeRating(
+                  app.lastRating!.id,
+                  app.lastRating!.previous,
+                )
+              }
+            >
+              Отменить
+            </button>
+            <button
+              type="button"
+              aria-label="Скрыть оценку"
+              onClick={() => app.setLastRating(null)}
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {welcome ? (
+          <OnboardingDialog app={app} />
+        ) : app.selected ? (
           <RecipeScreen app={app} />
         ) : app.libraryRecipeId ? (
           <LibraryRecipeScreen app={app} />
@@ -86,31 +118,34 @@ export function App() {
           </>
         )}
       </main>
-      {!app.selected && !app.libraryOpen && !app.libraryRecipeId && (
-        <nav className="bottom" aria-label="Основная навигация">
-          {(
-            [
-              ["home", Home, "Главная"],
-              ["pantry", Archive, "Полка"],
-              ["diary", NotebookPen, "Дневник"],
-              ["profile", UserRound, "Профиль"],
-            ] as const
-          ).map(([key, Icon, label]) => (
-            <button
-              aria-current={tab === key ? "page" : undefined}
-              className={tab === key ? "active" : ""}
-              key={key}
-              onClick={() => {
-                if (key === "home") app.setRecipeFoodId(null);
-                setTab(key);
-              }}
-            >
-              <Icon size={21} />
-              {label}
-            </button>
-          ))}
-        </nav>
-      )}
+      {!welcome &&
+        !app.selected &&
+        !app.libraryOpen &&
+        !app.libraryRecipeId && (
+          <nav className="bottom" aria-label="Основная навигация">
+            {(
+              [
+                ["home", Home, "Главная"],
+                ["pantry", Archive, "Полка"],
+                ["diary", NotebookPen, "Дневник"],
+                ["profile", UserRound, "Профиль"],
+              ] as const
+            ).map(([key, Icon, label]) => (
+              <button
+                aria-current={tab === key ? "page" : undefined}
+                className={tab === key ? "active" : ""}
+                key={key}
+                onClick={() => {
+                  if (key === "home") app.setRecipeFoodId(null);
+                  setTab(key);
+                }}
+              >
+                <Icon size={21} />
+                {label}
+              </button>
+            ))}
+          </nav>
+        )}
       <Dialogs app={app} />
       {app.saveError && (
         <div className="save-recovery">

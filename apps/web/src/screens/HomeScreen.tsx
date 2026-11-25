@@ -1,27 +1,13 @@
 import { ReadyMeals } from "../components/ReadyMeals";
-import { shortages } from "../domain/cooking";
-import { ArrowLeft, ChefHat, X } from "lucide-react";
+import { PersonalIdeas } from "../components/PersonalIdeas";
+import { ArrowLeft, ChefHat, Plus, X } from "lucide-react";
 import { AiRecipesPanel } from "../components/AiRecipesPanel";
-import { Empty } from "../components/ui";
 import type { AppController } from "../hooks/useAppController";
 
 export function HomeScreen({ app }: { app: AppController }) {
   if (app.tab !== "home") return null;
-  const { state, sortedRecipes, recipeFoodId, setRecipeFoodId, foodName } = app;
-  const recipes = recipeFoodId
-    ? sortedRecipes.filter((r) =>
-        r.ingredients.some((i) => i.foodId === recipeFoodId && i.grams > 0),
-      )
-    : sortedRecipes;
-  const ready = recipes.filter(
-    (r) => !shortages(r.ingredients, state.pantry, app.catalog).length,
-  );
-  const missing = recipes.filter(
-    (r) => shortages(r.ingredients, state.pantry, app.catalog).length,
-  );
-  const preview = [...ready.slice(0, 2), ...missing.slice(0, 1)];
-  for (const recipe of recipes)
-    if (preview.length < 3 && !preview.includes(recipe)) preview.push(recipe);
+  const { state, recipeFoodId, setRecipeFoodId, foodName } = app;
+  const hasProducts = state.pantry.some((p) => p.grams > 1e-6);
   return (
     <section className="home-page">
       {recipeFoodId && (
@@ -53,19 +39,24 @@ export function HomeScreen({ app }: { app: AppController }) {
           </button>
         </section>
       )}
-      <AiRecipesPanel app={app} />
-      <ReadyMeals app={app} />
-      <div className="section-title home-recipes-heading">
-        <h2>Идеи для тебя</h2>
-      </div>
-      <div className="home-recipes">{preview.map(app.recipeCard)}</div>
-      {!recipes.length && (
-        <Empty>
-          {recipeFoodId
-            ? "Под выбранное время и предпочтения рецептов с этим продуктом пока нет. Попробуй персональный подбор."
-            : "Попробуй изменить время или предпочтения — или подбери рецепт по своим пожеланиям."}
-        </Empty>
+      {hasProducts ? (
+        <AiRecipesPanel app={app} />
+      ) : (
+        <section
+          className="home-empty-pantry"
+          aria-labelledby="empty-pantry-title"
+        >
+          <span className="home-empty-eyebrow">Твоя полка</span>
+          <h1 id="empty-pantry-title">Начнём с твоих продуктов</h1>
+          <p>Добавь то, что есть дома — подберём, что приготовить.</p>
+          <button className="primary" onClick={() => app.openPantry()}>
+            <Plus size={19} />
+            Добавить продукты
+          </button>
+        </section>
       )}
+      <ReadyMeals app={app} />
+      <PersonalIdeas app={app} />
     </section>
   );
 }

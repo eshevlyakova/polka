@@ -8,7 +8,10 @@ import { AccountApiError } from "../api/account";
 function load(repository: LocalRepository, key: string) {
   try {
     return {
-      state: bootstrapPrototype(repository, localStorage, key),
+      state:
+        import.meta.env.MODE === "test"
+          ? bootstrapPrototype(repository, localStorage, key)
+          : repository.load(),
       error: "",
     };
   } catch {
@@ -22,16 +25,12 @@ function load(repository: LocalRepository, key: string) {
 export function usePolkaState() {
   const session = useStateSession();
   const [repository] = useState(
-    () =>
-      new LocalRepository(
-        localStorage,
-        session?.mode === "demo" ? session.key : storageKey,
-      ),
+    () => new LocalRepository(localStorage, storageKey),
   );
   const [boot] = useState(() =>
     session?.mode === "account"
       ? { state: session.repository.snapshot.state, error: "" }
-      : load(repository, session?.mode === "demo" ? session.key : storageKey),
+      : load(repository, storageKey),
   );
   const [state, setState] = useState(boot.state);
   const [error, setError] = useState(boot.error);

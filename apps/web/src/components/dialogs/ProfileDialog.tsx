@@ -17,11 +17,13 @@ function ProfileForm({ app }: { app: AppController }) {
           event.preventDefault();
           try {
             const edited = profileFromForm(new FormData(event.currentTarget));
+            if (!edited.name) throw new Error("Укажи имя.");
             const profile = updateProfile(app.state.profile, {
               ...app.state.profile,
               ...edited,
               age: edited.age,
               heightCm: edited.heightCm,
+              weightKg: edited.weightKg,
             });
             await app.commit({ ...app.state, profile });
             app.setModal(null);
@@ -39,10 +41,14 @@ function ProfileForm({ app }: { app: AppController }) {
           Имя
           <input
             name="name"
+            required
             maxLength={60}
             autoComplete="given-name"
             defaultValue={
               app.state.profile?.name ??
+              (app.session?.mode === "account"
+                ? app.session.user.displayName
+                : undefined) ??
               telegram?.initDataUnsafe?.user?.first_name ??
               ""
             }
@@ -53,7 +59,7 @@ function ProfileForm({ app }: { app: AppController }) {
           {profileFields
             .filter(
               (field) =>
-                field.key !== "weightKg" && field.key !== "targetWeightKg",
+                field.key !== "targetWeightKg",
             )
             .map((field) => (
               <label key={field.key}>

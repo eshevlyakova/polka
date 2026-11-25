@@ -40,7 +40,9 @@ export function aiDevPlugin(): Plugin {
             size += buffer.length;
             if (
               size >
-              ((incoming.url ?? "").split("?")[0].endsWith("/ai/receipt")
+              (/\/ai\/(receipt|transcribe)$/.test(
+                (incoming.url ?? "").split("?")[0],
+              )
                 ? RECEIPT_BODY_LIMIT
                 : (incoming.url ?? "").split("?")[0] === "/state"
                   ? STATE_BODY_LIMIT
@@ -71,6 +73,10 @@ export function aiDevPlugin(): Plugin {
             request,
             {
               API_GLM: env.API_GLM,
+              TIMEWEB_AI_TOKEN: env.TIMEWEB_AI_TOKEN,
+              AI_TEXT_MODEL: env.AI_TEXT_MODEL,
+              AI_VISION_MODEL: env.AI_VISION_MODEL,
+              AI_SPEECH_MODEL: env.AI_SPEECH_MODEL,
               ALLOWED_ORIGIN: origin,
               BOT_TOKEN: env.BOT_TOKEN,
               DATABASE_URL: env.DATABASE_URL,

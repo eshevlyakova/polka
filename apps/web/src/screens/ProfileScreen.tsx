@@ -45,6 +45,34 @@ export function ProfileScreen({ app }: { app: AppController }) {
         <h1>Мой профиль</h1>
       </header>
       <ProfileDetails app={app} />
+      {!!app.state.recipeFeedback?.length && (
+        <details className="profile-recipe-ratings">
+          <summary>
+            Твои оценки рецептов · {app.state.recipeFeedback.length}
+          </summary>
+          {app.state.recipeFeedback.map((feedback) => (
+            <div className="profile-recipe-rating" key={feedback.recipeId}>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => app.openRatedRecipe(feedback.recipeId)}
+              >
+                {feedback.name}
+              </button>
+              <span>{feedback.rating === "like" ? "Нравится" : "Не моё"}</span>
+              <button
+                type="button"
+                className="text-button"
+                disabled={app.saving}
+                aria-label={`Убрать оценку: ${feedback.name}`}
+                onClick={() => app.removeRecipeRating(feedback.recipeId)}
+              >
+                Убрать
+              </button>
+            </div>
+          ))}
+        </details>
+      )}
       {app.session?.mode === "account" && (
         <div className="account-identity">
           <span>
@@ -53,25 +81,8 @@ export function ProfileScreen({ app }: { app: AppController }) {
               ? `@${app.session.user.username}`
               : app.session.user.displayName}
           </span>
-          <button
-            className="text-button"
-            disabled={app.saving || !!app.saveError}
-            onClick={() =>
-              app.run(() =>
-                app.session?.mode === "account"
-                  ? app.session.logout()
-                  : undefined,
-              )
-            }
-          >
-            Выйти
-          </button>
+
         </div>
-      )}
-      {app.session?.mode === "demo" && (
-        <button className="text-button" onClick={app.session.exit}>
-          Войти в свой аккаунт
-        </button>
       )}
       <div className="section-title">
         <h2>Твоя коллекция</h2>

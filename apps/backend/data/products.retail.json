@@ -1,0 +1,442 @@
+[
+  {
+    "id": "retail-5ka-897f3d1d6551ee858110",
+    "barcode": "",
+    "name": "Яйцо куриное Окское столовое СО",
+    "brand": "Окское",
+    "quantityLabel": "10 шт",
+    "per100": {
+      "kcal": 157,
+      "protein": 12.7,
+      "fat": 11.5,
+      "carbs": 0.7
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "3062835",
+        "label": "10 шт",
+        "url": "https://5ka.ru/product/yaytso-kurinoe-okskoe-stolovoe-so-10sht--3062835/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/yaytso-kurinoe-okskoe-stolovoe-so-10sht--3062835/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-e845efae3b6794ebd671",
+    "barcode": "",
+    "name": "Яйцо Окское СВ столовое",
+    "brand": "Окское",
+    "quantityLabel": "10 шт",
+    "per100": {
+      "kcal": 157,
+      "protein": 12.7,
+      "fat": 11.5,
+      "carbs": 0.7
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4213682",
+        "label": "10 шт",
+        "url": "https://5ka.ru/product/yaytso-okskoe-sv-stolovoe-10sht--4213682/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/yaytso-okskoe-sv-stolovoe-10sht--4213682/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-72c8146c56cf1a9b149c",
+    "barcode": "",
+    "name": "Сыр плавленый President Сливочный 45%",
+    "brand": "President",
+    "quantityLabel": "200 г",
+    "per100": {
+      "kcal": 230,
+      "protein": 8.5,
+      "fat": 18,
+      "carbs": 8.5
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "3073338",
+        "label": "200 г",
+        "url": "https://5ka.ru/product/syr-plavlenyy-president-slivochnyy-45-bzmzh-200g--3073338/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/syr-plavlenyy-president-slivochnyy-45-bzmzh-200g--3073338/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-7dffa63a7a2c02ce49ea",
+    "barcode": "",
+    "name": "Масло сливочное Простоквашино 82%",
+    "brand": "Простоквашино",
+    "quantityLabel": "180 г",
+    "per100": {
+      "kcal": 744,
+      "protein": 0.6,
+      "fat": 82,
+      "carbs": 0.9
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "2146704",
+        "label": "180 г",
+        "url": "https://5ka.ru/product/maslo-slivochnoe-prostokvashino-82-bzmzh-180g--2146704/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/maslo-slivochnoe-prostokvashino-82-bzmzh-180g--2146704/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-f193a9b4073f518bf397",
+    "barcode": "",
+    "name": "Колбаса Вязанка Докторская вареная",
+    "brand": "Вязанка",
+    "quantityLabel": "370 г",
+    "per100": {
+      "kcal": 230,
+      "protein": 12,
+      "fat": 20,
+      "carbs": 0
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4301347",
+        "label": "370 г",
+        "url": "https://5ka.ru/product/kolbasa-vyazanka-doktorskaya-varenaya-370g--4301347/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/kolbasa-vyazanka-doktorskaya-varenaya-370g--4301347/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-bf5880c7f593c641413c",
+    "barcode": "",
+    "name": "Творог Простоквашино 5%",
+    "brand": "Простоквашино",
+    "quantityLabel": "200 г",
+    "per100": {
+      "kcal": 117,
+      "protein": 15,
+      "fat": 5,
+      "carbs": 3
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4121613",
+        "label": "200 г",
+        "url": "https://5ka.ru/product/tvorog-prostokvashino-5-bzmzh-200g--4121613/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/tvorog-prostokvashino-5-bzmzh-200g--4121613/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-475bf9cef47d957fcab6",
+    "barcode": "",
+    "name": "Творог Брест-Литовск 9%",
+    "brand": "Брест-Литовск",
+    "quantityLabel": "300 г",
+    "per100": {
+      "kcal": 151,
+      "protein": 16,
+      "fat": 9,
+      "carbs": 1.5
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4354542",
+        "label": "300 г",
+        "url": "https://5ka.ru/product/tvorog-brest-litovsk-9-bzmzh-300g--4354542/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/tvorog-brest-litovsk-9-bzmzh-300g--4354542/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-340d3663e855cea3372f",
+    "barcode": "",
+    "name": "Творог рассыпчатый ЭкоНива 5%",
+    "brand": "ЭкоНива",
+    "quantityLabel": "300 г",
+    "per100": {
+      "kcal": 121,
+      "protein": 16,
+      "fat": 5,
+      "carbs": 3
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4254613",
+        "label": "300 г",
+        "url": "https://5ka.ru/product/tvorog-rassypchatyy-ekoniva-5-bzmzh-300g--4254613/"
+      },
+      {
+        "sourceId": "4252940",
+        "label": "750 г",
+        "url": "https://5ka.ru/product/tvorog-rassypchatyy-ekoniva-5-bzmzh-750g--4252940/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/tvorog-rassypchatyy-ekoniva-5-bzmzh-300g--4254613/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-92a126f2659c67f67b55",
+    "barcode": "",
+    "name": "Гречка Увелка Экстра",
+    "brand": "Увелка",
+    "quantityLabel": "5 × 80 г",
+    "per100": {
+      "kcal": 360,
+      "protein": 13,
+      "fat": 2,
+      "carbs": 72
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "3603166",
+        "label": "5 × 80 г",
+        "url": "https://5ka.ru/product/grechka-uvelka-ekstra-5kh80g--3603166/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/grechka-uvelka-ekstra-5kh80g--3603166/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-a4a5dcb532f560e80dc1",
+    "barcode": "",
+    "name": "Макаронные изделия Barilla Феттуччине из твёрдых сортов пшеницы",
+    "brand": "Barilla",
+    "quantityLabel": "500 г",
+    "per100": {
+      "kcal": 359,
+      "protein": 12.5,
+      "fat": 2,
+      "carbs": 71.2
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "3474261",
+        "label": "500 г",
+        "url": "https://5ka.ru/product/makaronnye-izdeliya-barilla-fettuchchine-iz-tvyord--3474261/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/makaronnye-izdeliya-barilla-fettuchchine-iz-tvyord--3474261/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-df35847063ea182bd4e2",
+    "barcode": "",
+    "name": "Киноа Global Village",
+    "brand": "Global Village",
+    "quantityLabel": "450 г",
+    "per100": {
+      "kcal": 380,
+      "protein": 14,
+      "fat": 7,
+      "carbs": 65
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4276123",
+        "label": "450 г",
+        "url": "https://5ka.ru/product/kinoa-global-village-450g--4276123/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/kinoa-global-village-450g--4276123/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-7d18d2bda8cd5c857e29",
+    "barcode": "",
+    "name": "Киноа Мистраль",
+    "brand": "Мистраль",
+    "quantityLabel": "500 г",
+    "per100": {
+      "kcal": 373,
+      "protein": 14.4,
+      "fat": 7.1,
+      "carbs": 64.9
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "3649025",
+        "label": "500 г",
+        "url": "https://5ka.ru/product/kinoa-mistral-500g--3649025/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/kinoa-mistral-500g--3649025/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-742d0bd8cb2cf3bbb71b",
+    "barcode": "",
+    "name": "Творог Простоквашино 2%",
+    "brand": "Простоквашино",
+    "quantityLabel": "200 г",
+    "per100": {
+      "kcal": 99,
+      "protein": 17,
+      "fat": 2,
+      "carbs": 3.3
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4121611",
+        "label": "200 г",
+        "url": "https://5ka.ru/product/tvorog-prostokvashino-2-bzmzh-200g--4121611/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/tvorog-prostokvashino-2-bzmzh-200g--4121611/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-a5f24c0c9ec1a67b3360",
+    "barcode": "",
+    "name": "Сметана Домик в деревне 15%",
+    "brand": "Домик в деревне",
+    "quantityLabel": "300 г",
+    "per100": {
+      "kcal": 160,
+      "protein": 2.6,
+      "fat": 15,
+      "carbs": 3.6
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "3665624",
+        "label": "300 г",
+        "url": "https://5ka.ru/product/smetana-domik-v-derevne-15-bzmzh-300g--3665624/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/smetana-domik-v-derevne-15-bzmzh-300g--3665624/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  },
+  {
+    "id": "retail-5ka-572cabb3eb99e1dbdb2c",
+    "barcode": "",
+    "name": "Творог Брест-Литовск 5%",
+    "brand": "Брест-Литовск",
+    "quantityLabel": "180 г",
+    "per100": {
+      "kcal": 117,
+      "protein": 16.5,
+      "fat": 5,
+      "carbs": 1.5
+    },
+    "basis": "per100g",
+    "categories": [],
+    "packages": [
+      {
+        "sourceId": "4354543",
+        "label": "180 г",
+        "url": "https://5ka.ru/product/tvorog-brest-litovsk-5-bzmzh-180g--4354543/"
+      }
+    ],
+    "source": {
+      "name": "Пятёрочка",
+      "url": "https://5ka.ru/product/tvorog-brest-litovsk-5-bzmzh-180g--4354543/",
+      "license": "Not specified; factual product identifiers and nutrient values only",
+      "retrievedAt": "2026-11-24"
+    },
+    "verification": "retailer-page; sanity-checked; physical label not verified"
+  }
+]

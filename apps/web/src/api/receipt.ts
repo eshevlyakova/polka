@@ -43,13 +43,12 @@ export async function prepareReceiptImage(file: File): Promise<string> {
 }
 export async function fetchReceipt(
   image: string,
-  testCode: string,
   signal: AbortSignal,
 ): Promise<ReceiptResult> {
   const url = apiEndpoint("/api/ai/receipt");
   if (!url)
     throw new Error(
-      "Распознавание ещё не подключено к этой версии. Пока добавь продукты вручную.",
+      "Распознавание чека сейчас недоступно. Можно добавить продукты вручную.",
     );
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -58,7 +57,6 @@ export async function fetchReceipt(
     sessionAuthorization() ??
     (telegram?.initData ? `tma ${telegram.initData}` : undefined);
   if (authorization) headers.Authorization = authorization;
-  if (testCode.trim()) headers["X-Polka-Test-Code"] = testCode.trim();
   let response: Response;
   try {
     response = await fetch(url, {
